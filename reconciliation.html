@@ -162,6 +162,38 @@
   .opp li:last-child{margin-bottom:0}
   .opp li b{color:var(--teal)}
 
+  /* verdict box */
+  .vbox{margin:22px 0 6px;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+  .vbox .vhead{padding:16px 22px;background:var(--panel-3);border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+  .vbox .vhead .q{font-weight:800;font-family:var(--disp);font-size:1.05rem;letter-spacing:-.01em}
+  .vbox .vhead .a{margin-left:auto;font-family:var(--mono);font-size:.86rem;color:var(--amber);font-weight:600}
+  .vbox .vbody{padding:20px 22px;background:var(--panel)}
+  .vbox .vbody p:last-child{margin-bottom:0}
+
+  /* yes/no split */
+  .yesno{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0 4px}
+  @media(max-width:640px){ .yesno{grid-template-columns:1fr} }
+  .yn{border:1px solid var(--line);border-radius:14px;padding:16px 18px;background:var(--panel)}
+  .yn.does{border-top:3px solid var(--teal)}
+  .yn.doesnt{border-top:3px solid var(--amber)}
+  .yn h4{margin:0 0 10px;font-size:.95rem;display:flex;align-items:center;gap:8px}
+  .yn.does h4{color:var(--teal)} .yn.doesnt h4{color:var(--amber)}
+  .yn ul{margin:0;padding-left:16px}
+  .yn li{font-size:.87rem;color:var(--ink-2);margin-bottom:7px;line-height:1.45}
+  .yn li:last-child{margin-bottom:0}
+  .yn li b{color:var(--ink)}
+
+  /* tiers */
+  .tier{margin:16px 0;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden;box-shadow:var(--shadow)}
+  .tier .th{padding:12px 18px;background:var(--panel-2);border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .tier .th .tn{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--navy);padding:3px 8px;border-radius:5px}
+  .tier .th .tt{font-weight:700;font-size:.98rem}
+  .tier .th .tv{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+  .tier .tb{padding:14px 18px}
+  .tier .tb p{margin:0 0 8px;font-size:.88rem;color:var(--ink-2)}
+  .tier .tb p:last-child{margin:0}
+  .tier .tb b{color:var(--ink)}
+
   /* glossary */
   .gloss{display:grid; grid-template-columns:1fr 1fr; gap:10px 20px; margin:18px 0 4px}
   @media(max-width:600px){ .gloss{grid-template-columns:1fr} }
@@ -371,20 +403,149 @@
       tools</strong>, and most still lean on rules + a human for the exceptions — the gap from §6.</p>
   </section>
 
+  <!-- 8 TALLY -->
+  <section id="tally">
+    <div class="snum">§8</div>
+    <h2 class="sh">Does Tally already do this?</h2>
+    <p class="sub">Worth answering head-on — Tally runs a huge share of Indian SMB accounting.</p>
+
+    <div class="vbox">
+      <div class="vhead">
+        <span class="q">Does TallyPrime automate reconciliation?</span>
+        <span class="a">Partly — the easy half.</span>
+      </div>
+      <div class="vbody">
+        <p><strong>Yes, genuinely — and more than people assume.</strong> TallyPrime (especially
+          <strong>Release 6.0</strong>) ships real bank-reconciliation automation: it auto-imports bank
+          statements, and with <strong>Connected Banking</strong> it fetches statements straight from
+          <strong>145+ Indian banks</strong> (SBI, HDFC, ICICI, Axis, Kotak and regionals), shows live
+          balances, auto-reconciles matches, and can auto-create vouchers for missing entries.</p>
+        <p><strong>But per Tally’s own documentation, it automatically reconciles <em>exact</em> matches —
+          and hands everything else to a human.</strong> That line is the whole story.</p>
+      </div>
+    </div>
+
+    <div class="yesno">
+      <div class="yn does">
+        <h4>✓ What Tally automates</h4>
+        <ul>
+          <li><b>Auto-import</b> of bank statements (Excel, CSV, MT940)</li>
+          <li><b>Connected Banking</b> — fetch statements + live balance in-app (Release 6.0)</li>
+          <li><b>Exact-match auto-reconciliation</b> against your books</li>
+          <li><b>Suggests potential matches</b> using instrument date, amount and party</li>
+          <li><b>Auto-create vouchers</b> from bank statement lines</li>
+          <li><b>Configurable matching rules</b> and multiple recon views</li>
+        </ul>
+      </div>
+      <div class="yn doesnt">
+        <h4>✗ What still lands on a human</h4>
+        <ul>
+          <li><b>Reviewing/approving</b> every suggested “potential match”</li>
+          <li><b>Many-to-one / one-to-many</b> matching — manual selection</li>
+          <li><b>Partial matches</b> (bank charges, rounding) — you alter or add the entry yourself</li>
+          <li><b>Unmatched exceptions</b> (only-in-books / only-in-bank) — manual</li>
+          <li><b>Root-cause investigation</b> — nothing explains <em>why</em> an item is off</li>
+          <li><b>Scope:</b> it’s bank recon. Not multi-PSP, marketplace, or intercompany at scale</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="eli5" style="margin-top:22px">
+      <span class="tag">The punchline</span>
+      <p>Tally automates the <strong>~80% that already matches cleanly</strong> and leaves you the
+        <strong>~20% of exceptions</strong> — the same split from §4, and precisely the gap identified in §6.
+        So “has Tally already solved this?” → <strong>no. It solved the easy half.</strong> Its engine is
+        rules-and-suggestions, not agentic: nothing investigates, nothing learns from how you resolved the
+        same exception last month.</p>
+    </div>
+
+    <p style="margin-top:20px" class="note">Caveat worth checking with your friends: Tally dominates Indian
+      <em>SMB</em> accounting, but larger companies typically run SAP, Oracle or NetSuite — and their recon pain
+      lives in different tools. Confirm which stack they’re actually on before assuming Tally is the context.</p>
+  </section>
+
+  <!-- 9 AI LANDSCAPE -->
+  <section id="ai">
+    <div class="snum">§9</div>
+    <h2 class="sh">What AI &amp; “agentic” solutions others are offering</h2>
+    <p class="sub">The space is moving fast and is genuinely crowded. Know it before you build.</p>
+
+    <div class="insight" style="background:linear-gradient(135deg,var(--navy),color-mix(in srgb,var(--navy) 60%, var(--amber)))">
+      <div class="t">The distinction that matters most</div>
+      <p><strong>AI-assisted</strong> = the model suggests, a human approves. <strong>Agentic</strong> = the loop
+        closes by itself for most cases, and humans only see exceptions above a confidence threshold.
+        <strong>Almost every “AI reconciliation” claim you’ll read is the first one wearing the second one’s clothes.</strong></p>
+    </div>
+
+    <div class="tier">
+      <div class="th"><span class="tn">tier 1</span><span class="tt">Accounting incumbents bolting on AI</span><span class="tv">Tally · Zoho · Xero · QuickBooks</span></div>
+      <div class="tb">
+        <p><b>Zoho Books</b> (Feb 2026) added an AI agent for reconciliation: field prediction from past
+          behaviour, bulk “Quick Categorize” (50 txns at once), centralized bank rules across accounts.</p>
+        <p><b>Xero’s JAX</b> auto-reconciliation is described as class-leading for high-volume accounts.
+          <b>QuickBooks</b> offers AI Assist for categorization and transaction review. <b>Tally</b> — see §8.</p>
+        <p>All sit at <b>AI-assisted</b>: better matching and categorization for SMBs, human still owns exceptions.</p>
+      </div>
+    </div>
+
+    <div class="tier">
+      <div class="th"><span class="tn">tier 2</span><span class="tt">Enterprise close suites going agentic</span><span class="tv">BlackLine · HighRadius · Trintech</span></div>
+      <div class="tb">
+        <p><b>HighRadius</b> is the loudest: claims <b>200+ AI agents</b>, 99% accuracy, 100% GL account coverage
+          and 60%+ of close tasks automated. <b>BlackLine</b> runs <b>Verity AI</b> on its Studio360 architecture
+          with advertised <b>97–99% auto-match</b>.</p>
+        <p>Powerful, expensive, and aimed at enterprises — the incumbents from §7, now with agents attached.</p>
+      </div>
+    </div>
+
+    <div class="tier">
+      <div class="th"><span class="tn">tier 3</span><span class="tt">Recon specialists — including India-native</span><span class="tv">Cointab · Osfin · Kosh.ai · Nanonets</span></div>
+      <div class="tb">
+        <p><b>This is your actual competitive set.</b> <b>Cointab</b> connects banks, PSPs, ERPs, vendors and
+          marketplaces with reusable workflows and AI-assisted matching. <b>Osfin</b> offers a low-code platform
+          with <b>170+ connectors</b> and case studies claiming <b>90–99% automation</b>. <b>Kosh.ai</b> does
+          reconciliation + treasury + payouts in real time. <b>Nanonets</b> does AI transaction matching and
+          discrepancy detection.</p>
+        <p>These already attack the multi-source, multi-PSP problem Tally doesn’t touch.</p>
+      </div>
+    </div>
+
+    <div class="tier">
+      <div class="th"><span class="tn">tier 4</span><span class="tt">Agentic-native / modern close</span><span class="tv">Numeric · Kognitos · Trullion</span></div>
+      <div class="tb">
+        <p>Newer, AI-first tooling built for fast deployment rather than enterprise configuration projects.
+          Vendors claim agentic systems <b>learn from past resolutions</b> and remove <b>up to 80%</b> of manual
+          intervention from the close.</p>
+      </div>
+    </div>
+
+    <p style="margin-top:22px"><strong>Two market signals worth holding onto:</strong></p>
+    <div class="grid">
+      <div class="tile"><h3><span class="ic">signal</span> The shift is real</h3><p>Gartner projects <b>44% of finance teams</b> will operate with agentic AI components by <b>end of 2026</b>. Agents are claimed to compress close cycles from 10–15 days to 3–5.</p></div>
+      <div class="tile"><h3><span class="ic">signal</span> MCP is opening the door</h3><p>MCP servers now exist for <b>QuickBooks, Xero and Zoho Books</b>, letting AI agents read accounting data directly — a real integration path. <b>Notably absent: Tally.</b></p></div>
+    </div>
+
+    <p class="note" style="margin-top:16px">⚠︎ Every accuracy/automation percentage in this section is a
+      <strong>vendor marketing claim</strong>, self-reported and unaudited. Treat them as positioning, not
+      benchmarks — and be suspicious of any “99%” that doesn’t say <em>99% of what</em>.</p>
+  </section>
+
   <!-- OPPORTUNITY -->
   <section id="opp">
-    <div class="snum">§8</div>
+    <div class="snum">§10</div>
     <h2 class="sh">What this means for your project</h2>
     <p class="sub">A founder’s reading of the above — questions to take back to your friends.</p>
     <div class="opp">
       <div class="head">◆ How to think about the opportunity</div>
       <div class="body">
         <ul>
-          <li><b>Don’t sell “matching.”</b> That’s commoditized. Sell <b>exception resolution</b> — the ~20% that costs the hours.</li>
+          <li><b>Don’t sell “matching.”</b> That’s commoditized — Tally, Zoho, Xero and every close suite already do it. Sell <b>exception resolution</b> — the ~20% that costs the hours.</li>
+          <li><b>Tally is not your competitor — it’s your evidence.</b> It automates exact matches and hands back everything hard (§8). Anyone on Tally still has the painful half unsolved.</li>
           <li><b>Pick a wedge type.</b> Bank recon is broadest; intercompany is ugliest (and stickiest). Ask your friends which one bleeds most where they work.</li>
-          <li><b>Capture the judgment.</b> If your tool records <em>why</em> an exception was resolved and reuses it next month, you build a moat competitors’ rule engines don’t have.</li>
-          <li><b>Watch the segment gap.</b> Enterprise tools are costly and slow; smaller teams are underserved. Where do your friends’ companies actually sit?</li>
-          <li><b>Questions to ask them:</b> Which recon takes longest? How many sources/systems? What % auto-matches today? Where does an exception physically get investigated — email? Slack? A person’s memory?</li>
+          <li><b>Capture the judgment.</b> If your tool records <em>why</em> an exception was resolved and reuses it next month, you build a moat rule engines don’t have. This is the one thing tiers 1–4 all claim and few demonstrably do.</li>
+          <li><b>Respect the crowd.</b> Cointab, Osfin, Kosh.ai and Nanonets are already here (§9). “We automate reconciliation” is not a differentiator in 2026 — be specific about which exceptions you close autonomously and how you prove it.</li>
+          <li><b>Watch the segment gap.</b> Enterprise tools are costly and slow; smaller teams are underserved. Where do your friends’ companies actually sit — Tally SMB, or SAP/NetSuite enterprise?</li>
+          <li><b>Questions to ask them:</b> Which recon takes longest? Which system is the book of record? How many sources/PSPs? What % auto-matches today? Where does an exception physically get investigated — email? Slack? A person’s memory?</li>
         </ul>
       </div>
     </div>
@@ -392,7 +553,7 @@
 
   <!-- GLOSSARY -->
   <section id="glossary">
-    <div class="snum">§9</div>
+    <div class="snum">§11</div>
     <h2 class="sh">Glossary — so no term trips you up</h2>
     <dl class="gloss">
       <div><dt>General Ledger (GL)</dt><dd>The company’s master record of every financial transaction — its official “books.”</dd></div>
@@ -405,6 +566,9 @@
       <div><dt>Auto-match rate</dt><dd>The % of transactions software pairs up with no human help — the number vendors love to quote.</dd></div>
       <div><dt>Timing difference</dt><dd>A gap caused only by <em>when</em> something was recorded vs. cleared — real, but not an error.</dd></div>
       <div><dt>SOX / audit</dt><dd>Compliance regimes that effectively mandate reconciled, documented accounts.</dd></div>
+      <div><dt>Agentic AI</dt><dd>Software that acts on its own and closes the loop, vs. “AI-assisted” which only suggests and waits for a human to approve.</dd></div>
+      <div><dt>Connected Banking</dt><dd>Tally’s feature that pulls statements and balances directly from your bank into the software, no manual export.</dd></div>
+      <div><dt>MCP</dt><dd>Model Context Protocol — a standard letting AI agents plug into external systems (now available for QuickBooks, Xero, Zoho Books).</dd></div>
     </dl>
   </section>
 
@@ -421,7 +585,18 @@
       ▸ <a href="https://www.kosh.ai/blog/understanding-exception-management-in-automated-reconciliation">Kosh.ai — Exception management in automated reconciliation</a><br>
       ▸ <a href="https://ppnsolutions.com/blog/intercompany-reconciliation-methods/">PPN — Intercompany reconciliation methods</a><br>
       ▸ <a href="https://satvasolutions.com/blog/best-reconciliation-software">Satva / Ledge / Numeric — reconciliation software roundups (pricing)</a><br>
-      ▸ <a href="https://reconwizz.com/blog/financial-reconciliation-challenges-2025">Reconwizz / Payline — reconciliation challenges 2025</a>
+      ▸ <a href="https://reconwizz.com/blog/financial-reconciliation-challenges-2025">Reconwizz / Payline — reconciliation challenges 2025</a><br>
+      <br>
+      TALLY &amp; THE AI LANDSCAPE (§8–§9)<br>
+      ▸ <a href="https://help.tallysolutions.com/auto-bank-reconciliation/">TallyHelp — Auto-reconcile transactions with bank statement</a> <em>(primary source for what Tally does/doesn’t automate)</em><br>
+      ▸ <a href="https://help.tallysolutions.com/tally-prime/banking-utilities/bank-reconciliation-tally/">TallyHelp — Bank reconciliation in TallyPrime</a><br>
+      ▸ <a href="https://tallysolutions.com/business-guides/how-to-auto-import-bank-statements-for-faster-reconciliation-in-tallyprime/">Tally — Auto-import bank statements</a><br>
+      ▸ <a href="https://www.spectracompunet.com/blog/tallyprime-6-0-transforming-accounting-with-automated-bank-reconciliation-connected-banking-1">TallyPrime 6.0 — automated bank recon &amp; Connected Banking</a><br>
+      ▸ <a href="https://www.zoho.com/blog/books/banking-enhancements.html">Zoho Books — AI-powered reconciliation (Feb 2026)</a><br>
+      ▸ <a href="https://www.highradius.com/resources/Blog/agentic-ai-in-bank-reconciliation/">HighRadius — Agentic AI in bank reconciliation</a><br>
+      ▸ <a href="https://www.kognitos.com/blog/top-ai-platforms-automated-reconciliation-2026/">Kognitos — Top AI platforms for automated reconciliation 2026</a><br>
+      ▸ <a href="https://technode.global/2026/06/01/ai-agents-in-finance-how-autonomous-ai-is-reshaping-the-financial-industry-in-2026/">TNGlobal — AI agents in finance 2026 (Gartner 44% projection)</a><br>
+      ▸ <a href="https://www.cointab.net/">Cointab</a> · <a href="https://www.osfin.ai/">Osfin</a> · <a href="https://www.kosh.ai/">Kosh.ai</a> · <a href="https://nanonets.com/automated-reconciliation">Nanonets</a> — India-native recon platforms
     </p>
     <p class="meta" style="margin-top:16px; color:var(--ink-3)">
       Beginner briefing compiled 2026-07-16 for a product-discovery goal. Statistics are directional, drawn from
