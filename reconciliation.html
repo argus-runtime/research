@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reconciliation, from zero — a builder's briefing</title>
+<style>
+  :root{
+    --bg:#f6f7f5; --panel:#ffffff; --panel-2:#eef1ee; --panel-3:#e7ebe8;
+    --ink:#141a17; --ink-2:#4c5751; --ink-3:#7d8a83;
+    --line:#dfe4e0; --line-2:#eaeeea;
+    --teal:#0e7c66;     /* primary */
+    --teal-soft:#0e7c661a;
+    --navy:#1d3a4f;
+    --amber:#b56a10;    /* painpoints / warnings */
+    --amber-soft:#b56a1015;
+    --red:#b3402e;
+    --mono:"SFMono-Regular",ui-monospace,"Menlo","Consolas",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
+    --disp:"Inter",-apple-system,"Segoe UI",system-ui,sans-serif;
+    --shadow:0 1px 0 rgba(20,26,23,.03), 0 20px 46px -30px rgba(20,40,30,.35);
+  }
+  @media (prefers-color-scheme:dark){
+    :root[data-theme="auto"]{
+      --bg:#0d1210; --panel:#141b18; --panel-2:#1a2320; --panel-3:#202b27;
+      --ink:#e8efea; --ink-2:#a7b4ad; --ink-3:#6f7d76;
+      --line:#25302b; --line-2:#1c2521;
+      --teal:#3fbfa1; --teal-soft:#3fbfa119; --navy:#7fb0cc;
+      --amber:#e0a13c; --amber-soft:#e0a13c14; --red:#e07a63;
+      --shadow:0 1px 0 rgba(255,255,255,.02), 0 26px 60px -32px rgba(0,0,0,.85);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1210; --panel:#141b18; --panel-2:#1a2320; --panel-3:#202b27;
+    --ink:#e8efea; --ink-2:#a7b4ad; --ink-3:#6f7d76;
+    --line:#25302b; --line-2:#1c2521;
+    --teal:#3fbfa1; --teal-soft:#3fbfa119; --navy:#7fb0cc;
+    --amber:#e0a13c; --amber-soft:#e0a13c14; --red:#e07a63;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 26px 60px -32px rgba(0,0,0,.85);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); line-height:1.62; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:0 22px}
+
+  .toggle{
+    position:fixed; top:14px; right:14px; z-index:30;
+    font-family:var(--mono); font-size:11px; letter-spacing:.05em;
+    background:var(--panel); color:var(--ink-2);
+    border:1px solid var(--line); border-radius:999px; padding:7px 13px; cursor:pointer; box-shadow:var(--shadow);
+  }
+  .toggle:hover{color:var(--teal); border-color:var(--teal)}
+
+  /* progress rail */
+  .rail{position:fixed; top:0; left:0; height:3px; background:var(--teal); width:0; z-index:40; transition:width .1s linear}
+
+  /* masthead */
+  header.mast{padding:62px 0 34px; border-bottom:1px solid var(--line)}
+  .kicker{font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--teal); margin:0 0 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .kicker::before{content:""; width:26px; height:1px; background:var(--teal)}
+  h1{font-family:var(--disp); font-weight:800; font-size:clamp(2rem,6.4vw,3.3rem); line-height:1.02; letter-spacing:-.025em; margin:0 0 16px}
+  h1 span{color:var(--teal)}
+  .dek{font-size:1.13rem; color:var(--ink-2); max-width:64ch; margin:0}
+  .who{margin-top:22px; padding:14px 18px; border:1px dashed var(--line); border-radius:12px; background:var(--panel); font-size:.92rem; color:var(--ink-2)}
+  .who b{color:var(--ink)}
+
+  /* stat strip */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:30px 0 4px}
+  @media(max-width:640px){ .stats{grid-template-columns:1fr 1fr} }
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 14px; box-shadow:var(--shadow)}
+  .stat .big{font-family:var(--mono); font-weight:600; font-size:1.5rem; color:var(--teal); letter-spacing:-.02em}
+  .stat .lbl{font-size:.78rem; color:var(--ink-2); margin-top:5px; line-height:1.35}
+
+  /* sections */
+  section{padding:48px 0; border-bottom:1px solid var(--line-2)}
+  .snum{font-family:var(--mono); font-size:12px; color:var(--teal); letter-spacing:.12em}
+  h2.sh{font-family:var(--disp); font-size:1.72rem; font-weight:800; letter-spacing:-.02em; margin:6px 0 6px}
+  .sub{color:var(--ink-3); margin:0 0 20px; font-size:.98rem}
+  p{margin:0 0 15px}
+  .lead{font-size:1.08rem}
+  strong{color:var(--ink)}
+  a{color:var(--teal); text-decoration:none; border-bottom:1px solid transparent}
+  a:hover{border-color:var(--teal)}
+  code{font-family:var(--mono); font-size:.85em; background:var(--panel-2); color:var(--ink); padding:2px 6px; border-radius:5px}
+
+  /* ELI5 box */
+  .eli5{position:relative; margin:20px 0; padding:18px 20px 18px 22px; background:var(--teal-soft); border:1px solid color-mix(in srgb,var(--teal) 35%, transparent); border-radius:0 14px 14px 0; border-left:4px solid var(--teal)}
+  .eli5 .tag{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--teal); font-weight:600; display:block; margin-bottom:6px}
+  .eli5 p{margin:0; color:var(--ink); font-size:.97rem}
+  .eli5 p+p{margin-top:10px}
+
+  /* two-ledger visual */
+  .ledger{display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin:24px 0 6px; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow)}
+  @media(max-width:620px){ .ledger{grid-template-columns:1fr; } .ledger .mid{flex-direction:row; padding:10px} }
+  .lcol{background:var(--panel); padding:16px}
+  .lcol h4{margin:0 0 10px; font-size:.82rem; font-family:var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
+  .lrow{display:flex; justify-content:space-between; font-family:var(--mono); font-size:.82rem; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:var(--panel-2)}
+  .lrow.ok{color:var(--teal)}
+  .lrow.bad{color:var(--amber); background:var(--amber-soft); outline:1px solid color-mix(in srgb,var(--amber) 40%,transparent)}
+  .mid{background:var(--panel-3); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 14px; color:var(--ink-3); font-family:var(--mono); font-size:.72rem; letter-spacing:.1em; gap:6px}
+  .mid .eq{font-size:1.3rem; color:var(--teal)}
+
+  /* funnel */
+  .funnel{margin:22px 0 6px; display:grid; gap:8px}
+  .fbar{display:grid; grid-template-columns:180px 1fr; gap:14px; align-items:center}
+  @media(max-width:560px){ .fbar{grid-template-columns:1fr; gap:4px} }
+  .fbar .flab{font-size:.86rem; color:var(--ink-2)}
+  .fbar .flab b{color:var(--ink)}
+  .fbar .track{height:34px; background:var(--panel-2); border-radius:8px; overflow:hidden; border:1px solid var(--line)}
+  .fbar .fill{height:100%; display:flex; align-items:center; padding-left:12px; font-family:var(--mono); font-size:.8rem; color:#fff; white-space:nowrap}
+
+  /* cards grid */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0 4px}
+  @media(max-width:640px){ .grid{grid-template-columns:1fr} }
+  .tile{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; box-shadow:var(--shadow)}
+  .tile h3{margin:0 0 6px; font-size:1rem; display:flex; align-items:center; gap:9px}
+  .tile h3 .ic{font-family:var(--mono); font-size:.72rem; color:var(--teal); border:1px solid var(--teal); border-radius:6px; padding:2px 6px}
+  .tile p{margin:0; font-size:.9rem; color:var(--ink-2)}
+  .tile .ex{margin-top:9px; font-size:.82rem; color:var(--ink-3); font-style:italic}
+
+  /* steps */
+  .steps{list-style:none; counter-reset:s; padding:0; margin:20px 0 4px; display:grid; gap:12px}
+  .steps li{counter-increment:s; position:relative; padding:16px 18px 16px 60px; background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow)}
+  .steps li::before{content:counter(s); position:absolute; left:16px; top:16px; width:30px; height:30px; border-radius:8px; background:var(--teal); color:#fff; font-family:var(--mono); font-weight:600; display:flex; align-items:center; justify-content:center; font-size:.9rem}
+  .steps li h4{margin:0 0 4px; font-size:1rem}
+  .steps li p{margin:0; font-size:.9rem; color:var(--ink-2)}
+  .steps li .man{display:inline-block; margin-top:8px; font-family:var(--mono); font-size:.74rem; color:var(--amber); background:var(--amber-soft); border:1px solid color-mix(in srgb,var(--amber) 35%,transparent); padding:2px 8px; border-radius:5px}
+
+  /* painpoints */
+  .pain{display:grid; gap:12px; margin:20px 0 4px}
+  .pcard{display:grid; grid-template-columns:auto 1fr; gap:16px; padding:16px 18px; background:var(--panel); border:1px solid var(--line); border-left:4px solid var(--amber); border-radius:0 12px 12px 0; box-shadow:var(--shadow)}
+  .pcard .pn{font-family:var(--mono); font-size:1.1rem; color:var(--amber); font-weight:600}
+  .pcard h4{margin:0 0 4px; font-size:1rem}
+  .pcard p{margin:0; font-size:.9rem; color:var(--ink-2)}
+  .pcard .stat-in{display:inline-block; margin-top:7px; font-family:var(--mono); font-size:.76rem; color:var(--ink); background:var(--panel-2); padding:2px 8px; border-radius:5px}
+
+  /* insight banner */
+  .insight{margin:26px 0 6px; padding:22px 24px; border-radius:16px; background:linear-gradient(135deg, var(--navy), color-mix(in srgb,var(--navy) 70%, var(--teal))); color:#fff; box-shadow:var(--shadow)}
+  .insight .t{font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:.8; margin-bottom:8px}
+  .insight p{margin:0; font-size:1.12rem; line-height:1.5}
+  .insight strong{color:#fff; background:rgba(255,255,255,.16); padding:1px 6px; border-radius:5px}
+
+  /* tools table */
+  .tbl{width:100%; border-collapse:collapse; font-size:.9rem; margin:16px 0 6px}
+  .tbl th,.tbl td{text-align:left; padding:11px 12px; border-bottom:1px solid var(--line-2); vertical-align:top}
+  .tbl th{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
+  .tbl td b{color:var(--ink)}
+  .tbl .price{font-family:var(--mono); color:var(--teal); white-space:nowrap}
+
+  .note{font-size:.82rem; color:var(--ink-3); font-style:italic; margin-top:8px}
+
+  /* opportunity box */
+  .opp{margin:24px 0 6px; border:1px solid var(--teal); border-radius:16px; overflow:hidden; box-shadow:var(--shadow)}
+  .opp .head{background:var(--teal); color:#fff; padding:14px 20px; font-weight:700; font-family:var(--disp); letter-spacing:-.01em; display:flex; align-items:center; gap:10px}
+  .opp .body{padding:20px 22px; background:var(--panel)}
+  .opp ul{margin:0; padding-left:18px}
+  .opp li{margin-bottom:10px; font-size:.95rem}
+  .opp li:last-child{margin-bottom:0}
+  .opp li b{color:var(--teal)}
+
+  /* glossary */
+  .gloss{display:grid; grid-template-columns:1fr 1fr; gap:10px 20px; margin:18px 0 4px}
+  @media(max-width:600px){ .gloss{grid-template-columns:1fr} }
+  .gloss dt{font-weight:700; font-size:.9rem; color:var(--ink)}
+  .gloss dd{margin:2px 0 12px; font-size:.86rem; color:var(--ink-2)}
+
+  footer{padding:38px 0 70px; color:var(--ink-3); font-size:.84rem}
+  footer .rule{height:1px; background:var(--line); margin-bottom:22px}
+  .meta{font-family:var(--mono); font-size:11.5px; line-height:1.95}
+  .meta a{color:var(--teal)}
+</style>
+</head>
+<body>
+<div class="rail" id="rail"></div>
+<button class="toggle" id="themeBtn">◐ theme</button>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="kicker">Research briefing · topic: reconciliation · built for a founder</p>
+    <h1>Reconciliation, <span>from zero.</span></h1>
+    <p class="dek">A plain-English walk through what reconciliation is, why finance teams do it, how
+      it actually works today, and where it hurts — written for someone who has never touched it, so
+      you can build for the people who live it every month.</p>
+    <div class="who">
+      <b>Who this is for:</b> you work at a startup that doesn’t do recon, so the word means nothing yet.
+      Your friends do it inside bigger companies and hate it. This gets you from <b>0 → able to hold a real
+      conversation</b> about the problem you want to automate. No accounting background assumed.
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="big">25–40%</div><div class="lbl">of finance teams’ time goes to reconciliation tasks</div></div>
+      <div class="stat"><div class="big">~50 hrs</div><div class="lbl">per month on cash reconciliation alone, at some teams</div></div>
+      <div class="stat"><div class="big">50%</div><div class="lbl">of finance teams still take 6+ days to close the books</div></div>
+      <div class="stat"><div class="big">~80 / 20</div><div class="lbl">auto-matched vs. the exceptions where the real work lives</div></div>
+    </div>
+    <p class="note">Figures from Ledge / CFO.com month-end-close benchmarks and industry roundups — see sources. Treat as directional, not gospel.</p>
+  </header>
+
+  <!-- 1 WHAT -->
+  <section id="what">
+    <div class="snum">§1</div>
+    <h2 class="sh">What is reconciliation?</h2>
+    <p class="sub">The one-sentence version, then the picture.</p>
+    <p class="lead"><strong>Reconciliation is the act of comparing two independent records of the same money
+      and making sure they agree</strong> — and when they don’t, finding out why and fixing it.</p>
+
+    <div class="eli5">
+      <span class="tag">In plain English</span>
+      <p>Imagine you and a friend both keep a list of a shared trip’s expenses. At the end you sit down and
+        check: “I have you paying ₹500 for lunch — do you?” Most lines match. A few don’t: you forgot one, they
+        typo’d another, one payment hasn’t cleared yet. You go line by line until <em>both lists tell the same
+        story</em>. That’s reconciliation. Now do it with thousands of transactions, real money, an auditor
+        watching, and a deadline — that’s a finance team’s month.</p>
+    </div>
+
+    <p>In a company there are always <strong>at least two records of the same event</strong>. Example: your
+      company’s own books (the “general ledger”) say you have ₹10,00,000 in the bank. The <em>bank’s</em>
+      statement says ₹9,90,000. Both claim to be the truth. Reconciliation is how you find the ₹10,000 gap,
+      explain it (a cheque that hasn’t cleared, a bank fee nobody recorded, a fraud, a typo), and get the two
+      numbers to tie out.</p>
+
+    <div class="ledger" aria-label="Two records being compared">
+      <div class="lcol">
+        <h4>Our books (ledger)</h4>
+        <div class="lrow ok">INV-1042 &nbsp;·&nbsp; +12,000 ✓</div>
+        <div class="lrow ok">Salary run &nbsp;·&nbsp; −4,80,000 ✓</div>
+        <div class="lrow ok">Refund #88 &nbsp;·&nbsp; −1,500 ✓</div>
+        <div class="lrow bad">— (no record) —</div>
+      </div>
+      <div class="mid"><span class="eq">⇄</span><span>MATCH</span></div>
+      <div class="lcol">
+        <h4>Bank statement</h4>
+        <div class="lrow ok">INV-1042 &nbsp;·&nbsp; +12,000 ✓</div>
+        <div class="lrow ok">Salary run &nbsp;·&nbsp; −4,80,000 ✓</div>
+        <div class="lrow ok">Refund #88 &nbsp;·&nbsp; −1,500 ✓</div>
+        <div class="lrow bad">Bank fee &nbsp;·&nbsp; −350 ⚠</div>
+      </div>
+    </div>
+    <p class="note">Three lines match cleanly. The bank fee exists on the bank side but was never recorded in the
+      books — that’s an <strong>exception</strong>, and chasing it down is the actual job.</p>
+  </section>
+
+  <!-- 2 WHY -->
+  <section id="why">
+    <div class="snum">§2</div>
+    <h2 class="sh">Why do companies do it?</h2>
+    <p class="sub">It’s not busywork — it’s the safety check on the numbers the whole business runs on.</p>
+    <div class="grid">
+      <div class="tile"><h3><span class="ic">01</span> Catch errors</h3><p>Typos, double entries, wrong amounts, missed transactions. If the books are wrong, every decision built on them is wrong.</p></div>
+      <div class="tile"><h3><span class="ic">02</span> Detect fraud &amp; leakage</h3><p>Money leaving that shouldn’t, duplicate payments, skimming. Comparing independent records is one of the oldest fraud controls that exists.</p></div>
+      <div class="tile"><h3><span class="ic">03</span> Explain timing gaps</h3><p>A payment you sent hasn’t cleared the bank yet. Nothing is wrong — but you must <em>know</em> that’s the reason the two numbers differ.</p></div>
+      <div class="tile"><h3><span class="ic">04</span> Trustworthy financials</h3><p>Investors, lenders and leadership act on the reported numbers. Reconciliation is what lets finance sign off that they’re real.</p></div>
+      <div class="tile"><h3><span class="ic">05</span> Pass the audit &amp; law</h3><p>Auditors and regulations (e.g. SOX) effectively require reconciled accounts. No reconciliation, no clean audit.</p></div>
+      <div class="tile"><h3><span class="ic">06</span> Know your real cash</h3><p>“How much money do we actually have right now?” is unanswerable if your books and your bank disagree.</p></div>
+    </div>
+    <div class="eli5">
+      <span class="tag">The mental model</span>
+      <p>Reconciliation is to a company’s finances what <em>testing</em> is to your code. You’re not adding a
+        feature — you’re proving the thing that’s already there is actually correct before anyone relies on it.</p>
+    </div>
+  </section>
+
+  <!-- 3 TYPES -->
+  <section id="types">
+    <div class="snum">§3</div>
+    <h2 class="sh">The main types (so the jargon stops scaring you)</h2>
+    <p class="sub">All of them are the same core move — “compare two records” — just different pairs of records.</p>
+    <div class="grid">
+      <div class="tile"><h3><span class="ic">bank</span> Bank reconciliation</h3><p>Company books vs. the bank statement. The classic, most common one.</p><p class="ex">“Our ledger says X, the bank says Y — why?”</p></div>
+      <div class="tile"><h3><span class="ic">card</span> Credit-card / expense</h3><p>Ledger entries vs. the card processor’s statement.</p><p class="ex">Matching every swipe to a recorded expense.</p></div>
+      <div class="tile"><h3><span class="ic">AP</span> Vendor / payables</h3><p>What you think you owe suppliers vs. what the supplier’s statement says.</p><p class="ex">“Their invoice says we owe ₹2L; our books say ₹1.8L.”</p></div>
+      <div class="tile"><h3><span class="ic">AR</span> Customer / receivables</h3><p>Invoices you issued vs. payments actually received from customers.</p><p class="ex">Which invoices are truly paid?</p></div>
+      <div class="tile"><h3><span class="ic">i/c</span> Intercompany</h3><p>Between two entities of the <em>same</em> group. One’s receivable must equal the other’s payable.</p><p class="ex">Subsidiary A sells to Subsidiary B — both sides must tie.</p></div>
+      <div class="tile"><h3><span class="ic">B/S</span> Balance-sheet / GL</h3><p>Each account balance vs. the supporting detail behind it. The month-end sweep.</p><p class="ex">Does every account actually add up to what it claims?</p></div>
+    </div>
+    <p class="note">Intercompany is famously the ugliest: different currencies, different accounting calendars, and
+      internal transfer pricing mean “equal and opposite” rarely lines up on the first pass.</p>
+  </section>
+
+  <!-- 4 HOW -->
+  <section id="how">
+    <div class="snum">§4</div>
+    <h2 class="sh">How it’s actually done today</h2>
+    <p class="sub">The workflow is the same everywhere. How much is manual is what varies — and it’s a lot.</p>
+
+    <ol class="steps">
+      <li><h4>Gather the records</h4><p>Pull data from every source: the ERP/accounting system, bank portals, card processors, payment gateways (PSPs), spreadsheets. Often exported by hand as CSVs.</p><span class="man">manual: downloading &amp; formatting files</span></li>
+      <li><h4>Normalize &amp; line them up</h4><p>Different systems name things differently, use different date formats, currencies, references. Everything has to be forced into a comparable shape first.</p><span class="man">manual: cleaning, VLOOKUPs, copy-paste</span></li>
+      <li><h4>Match</h4><p>Pair up entries that represent the same transaction. Simple cases match on amount + date + reference. Most transactions match automatically or quickly.</p></li>
+      <li><h4>Surface the exceptions</h4><p>Whatever <em>doesn’t</em> match is an “exception” — timing differences, duplicates, missing entries, fees, fraud signals, one payment covering many invoices.</p></li>
+      <li><h4>Investigate root cause</h4><p>A human chases each exception: emails, portal digging, asking another team. This is where the hours go and where “tribal knowledge” lives.</p><span class="man">manual: the real bottleneck</span></li>
+      <li><h4>Adjust &amp; document</h4><p>Post correcting entries, write notes explaining each difference, attach evidence for the auditor.</p><span class="man">manual: journal entries + narrative</span></li>
+      <li><h4>Review &amp; sign off</h4><p>A senior reviewer approves; the account is declared reconciled for the period. Repeat next month, forever.</p></li>
+    </ol>
+
+    <p style="margin-top:24px">The dirty secret of “automated” recon is that matching is the <em>easy</em> part.
+      Even good software auto-matches the bulk of transactions — but the leftover slice is where all the pain,
+      time and risk concentrate:</p>
+
+    <div class="funnel">
+      <div class="fbar"><div class="flab"><b>All transactions</b></div><div class="track"><div class="fill" style="width:100%;background:var(--navy)">100%</div></div></div>
+      <div class="fbar"><div class="flab">Auto-matched by rules</div><div class="track"><div class="fill" style="width:80%;background:var(--teal)">~80% — the easy part</div></div></div>
+      <div class="fbar"><div class="flab">Exceptions left over</div><div class="track"><div class="fill" style="width:20%;background:var(--amber)">~20% — the real job</div></div></div>
+      <div class="fbar"><div class="flab">Needs a human brain</div><div class="track"><div class="fill" style="width:12%;background:var(--red)">investigation</div></div></div>
+    </div>
+    <p class="note">Split is illustrative of the widely-cited “automation handles ~80%, exception management is the rest” framing (Numeric, Entries). Actual rates vary by business.</p>
+  </section>
+
+  <!-- 5 PAINPOINTS -->
+  <section id="pain">
+    <div class="snum">§5</div>
+    <h2 class="sh">The painpoints — what your friends are fighting</h2>
+    <p class="sub">This is the section to internalize. These are the wounds a product would heal.</p>
+
+    <div class="pain">
+      <div class="pcard"><div class="pn">01</div><div><h4>Everything lives in spreadsheets</h4><p>Excel is still the default reconciliation “tool.” It’s fragile, unversioned, and error-prone at scale.</p><span class="stat-in">~90% of spreadsheets contain errors · 50% of teams cite Excel-driven processes as a blocker</span></div></div>
+      <div class="pcard"><div class="pn">02</div><div><h4>It eats enormous time</h4><p>A recurring, unglamorous grind that repeats every single month and swallows the team right when the close deadline hits.</p><span class="stat-in">25–40% of finance time · up to ~50 hrs/month on cash recon</span></div></div>
+      <div class="pcard"><div class="pn">03</div><div><h4>Data is fragmented &amp; messy</h4><p>Many banks, PSPs, currencies, ERPs — each with its own format, naming and timing. Just getting the data comparable is half the battle.</p><span class="stat-in">missing references, mismatched amounts, multi-currency, multi-entity</span></div></div>
+      <div class="pcard"><div class="pn">04</div><div><h4>Exceptions are the real monster</h4><p>Recon isn’t a matching problem, it’s an <em>exception-management</em> problem. One-to-many and many-to-many matches, timing gaps, duplicates — none fit a simple rule.</p><span class="stat-in">the ~20% that rules can’t clear</span></div></div>
+      <div class="pcard"><div class="pn">05</div><div><h4>Knowledge lives in people’s heads</h4><p>“Oh, that difference is always the Singapore entity’s FX timing.” When logic lives in a reviewer’s memory instead of the system, it breaks when they’re on leave — or quit.</p><span class="stat-in">tribal knowledge · no audit trail of <em>why</em></span></div></div>
+      <div class="pcard"><div class="pn">06</div><div><h4>It doesn’t scale</h4><p>Double the transactions, entities or payment providers and the manual effort grows faster than linearly. Cross-team dependencies stall everything.</p><span class="stat-in">56% cite cross-team dependencies · 37% cite staff/capacity gaps</span></div></div>
+      <div class="pcard"><div class="pn">07</div><div><h4>Error &amp; compliance risk</h4><p>A missed exception can mean a misstated balance, a failed audit, or undetected fraud. The stakes make the manual fragility genuinely dangerous.</p><span class="stat-in">audit findings · restatements · fraud slipping through</span></div></div>
+    </div>
+  </section>
+
+  <!-- INSIGHT -->
+  <section id="insight" style="border-bottom:none; padding-bottom:20px">
+    <div class="snum">§6</div>
+    <h2 class="sh">The insight that matters for a product</h2>
+    <p class="sub">If you remember one thing from this whole report, make it this.</p>
+    <div class="insight">
+      <div class="t">The core wedge</div>
+      <p>Reconciliation is <strong>not a matching problem — it’s an exception-management problem.</strong>
+        Matching the easy 80% is close to solved. The money, the misery and the moat are all in the leftover
+        exceptions: <strong>investigating why things don’t tie, and capturing the human judgment that resolves them.</strong></p>
+    </div>
+    <p style="margin-top:22px">Most existing tools are proud of high <em>auto-match rates</em> (vendors advertise
+      97–99%). But a founder should notice what they’re quietly <em>not</em> solving well:</p>
+    <div class="grid">
+      <div class="tile"><h3><span class="ic">gap</span> Root-cause investigation</h3><p>Tools flag an exception; a human still has to figure out <em>why</em> and chase it across systems and teams.</p></div>
+      <div class="tile"><h3><span class="ic">gap</span> Capturing judgment</h3><p>The reasoning that resolves an exception rarely gets recorded, so the system never learns and the next person starts from scratch.</p></div>
+      <div class="tile"><h3><span class="ic">gap</span> Messy real-world data</h3><p>Unstructured references, one-payment-for-many-invoices, multi-currency, mid-period rule changes break rigid engines.</p></div>
+      <div class="tile"><h3><span class="ic">gap</span> Setup &amp; cost</h3><p>Enterprise suites are powerful but slow to implement and priced out of reach for smaller teams (see §7).</p></div>
+    </div>
+  </section>
+
+  <!-- 7 TOOLS -->
+  <section id="tools">
+    <div class="snum">§7</div>
+    <h2 class="sh">Who’s already in this space</h2>
+    <p class="sub">Know the incumbents — both as competition and as proof the pain is worth paying to fix.</p>
+    <table class="tbl">
+      <thead><tr><th>Tool</th><th>Aimed at</th><th>Reported price*</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td><b>BlackLine</b></td><td>Large enterprise</td><td class="price">$77K–$340K/yr</td><td>Market leader for high-volume, compliance-heavy close. Powerful but heavy — months to implement, real learning curve.</td></tr>
+        <tr><td><b>Trintech</b> (Cadency / Adra)</td><td>Enterprise / mid-market</td><td class="price">~$33K (Adra)</td><td>Cadency for enterprise; Adra brings automation to mid-market with less complexity.</td></tr>
+        <tr><td><b>HighRadius</b></td><td>Enterprise (O2C-heavy)</td><td class="price">custom</td><td>Strong on order-to-cash / AR automation.</td></tr>
+        <tr><td><b>FloQast</b></td><td>Mid-market / growing</td><td class="price">~$999/mo</td><td>Popular, close-management focused, lighter-weight.</td></tr>
+        <tr><td><b>Numeric</b></td><td>Startups → mid-market</td><td class="price">weeks to deploy</td><td>Modern, fast to implement; AI-forward close tooling.</td></tr>
+        <tr><td><b>ReconArt</b></td><td>High-volume specialists</td><td class="price">~$300/mo</td><td>Transaction-matching specialist at a low entry price.</td></tr>
+      </tbody>
+    </table>
+    <p class="note">*Prices are third-party blog estimates (Satva, Ledge, Numeric roundups) and vary widely by contract — use them only to sense the <em>shape</em> of the market, not as quotes.</p>
+    <p style="margin-top:14px">Read the table two ways: (1) big money already flows here, which validates the pain;
+      (2) it splits sharply between <strong>expensive/heavy enterprise suites</strong> and <strong>lighter mid-market
+      tools</strong>, and most still lean on rules + a human for the exceptions — the gap from §6.</p>
+  </section>
+
+  <!-- OPPORTUNITY -->
+  <section id="opp">
+    <div class="snum">§8</div>
+    <h2 class="sh">What this means for your project</h2>
+    <p class="sub">A founder’s reading of the above — questions to take back to your friends.</p>
+    <div class="opp">
+      <div class="head">◆ How to think about the opportunity</div>
+      <div class="body">
+        <ul>
+          <li><b>Don’t sell “matching.”</b> That’s commoditized. Sell <b>exception resolution</b> — the ~20% that costs the hours.</li>
+          <li><b>Pick a wedge type.</b> Bank recon is broadest; intercompany is ugliest (and stickiest). Ask your friends which one bleeds most where they work.</li>
+          <li><b>Capture the judgment.</b> If your tool records <em>why</em> an exception was resolved and reuses it next month, you build a moat competitors’ rule engines don’t have.</li>
+          <li><b>Watch the segment gap.</b> Enterprise tools are costly and slow; smaller teams are underserved. Where do your friends’ companies actually sit?</li>
+          <li><b>Questions to ask them:</b> Which recon takes longest? How many sources/systems? What % auto-matches today? Where does an exception physically get investigated — email? Slack? A person’s memory?</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- GLOSSARY -->
+  <section id="glossary">
+    <div class="snum">§9</div>
+    <h2 class="sh">Glossary — so no term trips you up</h2>
+    <dl class="gloss">
+      <div><dt>General Ledger (GL)</dt><dd>The company’s master record of every financial transaction — its official “books.”</dd></div>
+      <div><dt>ERP</dt><dd>The big software system (SAP, NetSuite, Oracle) that runs finance/operations and holds the ledger.</dd></div>
+      <div><dt>Close / month-end close</dt><dd>The monthly ritual of finalizing the books. Reconciliation is a core step in it.</dd></div>
+      <div><dt>Exception</dt><dd>Any item that doesn’t match automatically and needs a human to investigate.</dd></div>
+      <div><dt>PSP / payment gateway</dt><dd>A payment service provider (Stripe, Razorpay, etc.) that processes transactions — another data source to reconcile.</dd></div>
+      <div><dt>AP / AR</dt><dd>Accounts Payable (money you owe) / Accounts Receivable (money owed to you).</dd></div>
+      <div><dt>Intercompany</dt><dd>Transactions between entities inside the same corporate group that must net to zero.</dd></div>
+      <div><dt>Auto-match rate</dt><dd>The % of transactions software pairs up with no human help — the number vendors love to quote.</dd></div>
+      <div><dt>Timing difference</dt><dd>A gap caused only by <em>when</em> something was recorded vs. cleared — real, but not an error.</dd></div>
+      <div><dt>SOX / audit</dt><dd>Compliance regimes that effectively mandate reconciled, documented accounts.</dd></div>
+    </dl>
+  </section>
+
+  <footer>
+    <div class="rule"></div>
+    <p class="meta">
+      SOURCES (accessed 2026-07-16)<br>
+      ▸ <a href="https://www.ledge.co/content/month-end-close-benchmarks-for-2025">Ledge — State of month-end close 2025 benchmarks</a><br>
+      ▸ <a href="https://www.cfo.com/news/50-of-finance-take-week-to-close-books-ledge-month-end-close-time-cfo-three-day-close-myth-/746085/">CFO.com — 50% of finance teams take a week+ to close</a><br>
+      ▸ <a href="https://www.highradius.com/resources/Blog/what-is-financial-reconciliation-guide/">HighRadius — What is financial reconciliation (guide)</a><br>
+      ▸ <a href="https://www.solvexia.com/blog/types-of-reconciliation-in-accounting">SolveXia — 11 types of reconciliation in accounting</a><br>
+      ▸ <a href="https://www.numeric.io/blog/bank-reconciliation-automation">Numeric — Automating bank reconciliations</a><br>
+      ▸ <a href="https://www.tryentries.com/blog/bank-reconciliation-exceptions-framework">Entries — Bank reconciliation isn’t just matching (exceptions)</a><br>
+      ▸ <a href="https://www.kosh.ai/blog/understanding-exception-management-in-automated-reconciliation">Kosh.ai — Exception management in automated reconciliation</a><br>
+      ▸ <a href="https://ppnsolutions.com/blog/intercompany-reconciliation-methods/">PPN — Intercompany reconciliation methods</a><br>
+      ▸ <a href="https://satvasolutions.com/blog/best-reconciliation-software">Satva / Ledge / Numeric — reconciliation software roundups (pricing)</a><br>
+      ▸ <a href="https://reconwizz.com/blog/financial-reconciliation-challenges-2025">Reconwizz / Payline — reconciliation challenges 2025</a>
+    </p>
+    <p class="meta" style="margin-top:16px; color:var(--ink-3)">
+      Beginner briefing compiled 2026-07-16 for a product-discovery goal. Statistics are directional, drawn from
+      the industry sources above; vendor auto-match rates and prices are self-reported / third-party estimates.
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  const btn=document.getElementById('themeBtn'), root=document.documentElement;
+  const order=['auto','light','dark'], label={auto:'◐ auto',light:'☀ light',dark:'☾ dark'};
+  function set(t){root.setAttribute('data-theme',t);btn.textContent=label[t];try{localStorage.setItem('recon-theme',t)}catch(e){}}
+  let cur='auto'; try{const s=localStorage.getItem('recon-theme'); if(s&&order.includes(s))cur=s;}catch(e){}
+  set(cur);
+  btn.addEventListener('click',()=>{cur=order[(order.indexOf(cur)+1)%order.length];set(cur);});
+  // scroll progress rail
+  const rail=document.getElementById('rail');
+  addEventListener('scroll',()=>{const h=document.documentElement;const p=h.scrollTop/(h.scrollHeight-h.clientHeight);rail.style.width=(p*100)+'%';},{passive:true});
+</script>
+</body>
+</html>

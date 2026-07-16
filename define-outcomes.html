@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Define Outcomes — research briefing</title>
+<style>
+  /* ---------- palette ---------- */
+  :root{
+    --bg:#f4f1ea; --panel:#fbf9f4; --panel-2:#f0ece1;
+    --ink:#211d17; --ink-2:#5c5347; --ink-3:#8a7f6d;
+    --line:#ddd5c6; --line-2:#e8e1d3;
+    --accent:#b4531f;      /* burnt sienna */
+    --accent-2:#1f6f5c;    /* pine */
+    --gold:#a67c00;
+    --code-bg:#efe9dc; --code-ink:#4a3f2e;
+    --shadow:0 1px 0 rgba(0,0,0,.03), 0 18px 40px -28px rgba(60,45,25,.45);
+    --mono:"SFMono-Regular",ui-monospace,"Menlo","Consolas",monospace;
+    --serif:"Iowan Old Style","Palatino Linotype","Palatino","Georgia",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root[data-theme="auto"]{
+      --bg:#14130f; --panel:#1c1a15; --panel-2:#232019;
+      --ink:#efe9dc; --ink-2:#b8b0a0; --ink-3:#847c6c;
+      --line:#312d24; --line-2:#28251e;
+      --accent:#e8834a; --accent-2:#5cba9f; --gold:#d6a92e;
+      --code-bg:#211e18; --code-ink:#d9cfbb;
+      --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 55px -30px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14130f; --panel:#1c1a15; --panel-2:#232019;
+    --ink:#efe9dc; --ink-2:#b8b0a0; --ink-3:#847c6c;
+    --line:#312d24; --line-2:#28251e;
+    --accent:#e8834a; --accent-2:#5cba9f; --gold:#d6a92e;
+    --code-bg:#211e18; --code-ink:#d9cfbb;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 55px -30px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 12% -8%, color-mix(in srgb,var(--accent) 7%, transparent), transparent 42%);
+  }
+  .wrap{max-width:860px; margin:0 auto; padding:0 22px}
+
+  /* ---------- theme toggle ---------- */
+  .toggle{
+    position:fixed; top:14px; right:14px; z-index:20;
+    font-family:var(--mono); font-size:11px; letter-spacing:.05em;
+    background:var(--panel); color:var(--ink-2);
+    border:1px solid var(--line); border-radius:999px;
+    padding:7px 13px; cursor:pointer; box-shadow:var(--shadow);
+  }
+  .toggle:hover{color:var(--accent); border-color:var(--accent)}
+
+  /* ---------- masthead ---------- */
+  header.mast{padding:64px 0 30px; border-bottom:1px solid var(--line)}
+  .kicker{
+    font-family:var(--mono); font-size:12px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 18px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .kicker::before{content:""; width:26px; height:1px; background:var(--accent)}
+  h1{
+    font-family:var(--serif); font-weight:600; font-size:clamp(2.2rem,6vw,3.4rem);
+    line-height:1.04; letter-spacing:-.01em; margin:0 0 18px;
+  }
+  h1 em{font-style:italic; color:var(--accent)}
+  .dek{font-size:1.12rem; color:var(--ink-2); max-width:60ch; margin:0}
+  .srcbar{
+    margin-top:26px; display:flex; flex-wrap:wrap; gap:8px 18px;
+    font-family:var(--mono); font-size:12.5px; color:var(--ink-3);
+  }
+  .srcbar a{color:var(--accent-2); text-decoration:none; border-bottom:1px dotted}
+  .srcbar a:hover{color:var(--accent)}
+
+  /* ---------- date verdict banner ---------- */
+  .verdict{
+    margin:34px 0 8px; border:1px solid var(--line);
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border-radius:16px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .verdict .vtop{
+    display:flex; gap:16px; align-items:baseline; flex-wrap:wrap;
+    padding:20px 24px 6px;
+  }
+  .stamp{
+    font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+    color:#fff; background:var(--accent); padding:5px 11px; border-radius:6px;
+    transform:rotate(-1.5deg); box-shadow:0 6px 18px -8px var(--accent);
+  }
+  .verdict h2{margin:0; font-family:var(--serif); font-size:1.5rem; font-weight:600}
+  .verdict .bigdate{margin-left:auto; font-family:var(--mono); font-size:1.05rem; color:var(--accent-2); font-weight:600}
+  .verdict p{margin:8px 24px 4px; color:var(--ink-2); font-size:.98rem}
+  .verdict .foot{
+    margin-top:14px; padding:12px 24px; border-top:1px solid var(--line-2);
+    background:color-mix(in srgb,var(--gold) 8%, transparent);
+    font-size:.9rem; color:var(--ink-2);
+  }
+  .verdict .foot strong{color:var(--ink)}
+
+  /* ---------- sections ---------- */
+  section{padding:46px 0; border-bottom:1px solid var(--line-2)}
+  .snum{font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.12em}
+  h2.sh{font-family:var(--serif); font-size:1.75rem; font-weight:600; margin:6px 0 4px; letter-spacing:-.01em}
+  .sub{color:var(--ink-3); margin:0 0 22px; font-size:.98rem}
+  p{margin:0 0 15px}
+  strong{color:var(--ink)}
+  .lead{font-size:1.08rem}
+  em.term{font-style:normal; color:var(--accent-2); font-weight:600}
+
+  code{font-family:var(--mono); font-size:.86em; background:var(--code-bg); color:var(--code-ink); padding:2px 6px; border-radius:5px}
+
+  /* ---------- the loop diagram ---------- */
+  .loop{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:26px 0 6px;
+  }
+  .step{
+    position:relative; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:14px 12px; text-align:center; box-shadow:var(--shadow);
+  }
+  .step .n{font-family:var(--mono); font-size:11px; color:var(--ink-3)}
+  .step .t{font-weight:650; font-size:.92rem; margin-top:3px}
+  .step .d{font-size:.78rem; color:var(--ink-2); margin-top:4px; line-height:1.4}
+  .step.grade{border-color:var(--accent-2)}
+  .step.grade .t{color:var(--accent-2)}
+  .loopback{
+    margin:12px 0 0; font-family:var(--mono); font-size:12px; color:var(--ink-3);
+    display:flex; align-items:center; gap:8px;
+  }
+  .loopback .arc{flex:1; height:1px; background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+  @media(max-width:640px){ .loop{grid-template-columns:1fr 1fr} }
+
+  /* ---------- callout cards ---------- */
+  .cards{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:22px 0 4px}
+  @media(max-width:640px){ .cards{grid-template-columns:1fr} }
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:20px; box-shadow:var(--shadow);
+  }
+  .card h3{margin:0 0 8px; font-size:1.02rem; display:flex; align-items:center; gap:9px}
+  .card h3 .dot{width:9px; height:9px; border-radius:50%; background:var(--accent)}
+  .card.two h3 .dot{background:var(--accent-2)}
+  .card p{font-size:.92rem; color:var(--ink-2); margin:0}
+  .card p+p{margin-top:9px}
+
+  /* ---------- result table ---------- */
+  .tbl{width:100%; border-collapse:collapse; margin:14px 0 4px; font-size:.92rem}
+  .tbl th,.tbl td{text-align:left; padding:11px 12px; border-bottom:1px solid var(--line-2); vertical-align:top}
+  .tbl th{font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3)}
+  .tbl td:first-child code{white-space:nowrap}
+  .tag{display:inline-block; font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:5px; border:1px solid var(--line)}
+  .tag.ok{color:var(--accent-2); border-color:var(--accent-2)}
+  .tag.warn{color:var(--gold); border-color:var(--gold)}
+  .tag.bad{color:var(--accent); border-color:var(--accent)}
+
+  /* ---------- env spec list ---------- */
+  .spec{list-style:none; padding:0; margin:20px 0 4px; display:grid; gap:12px}
+  .spec li{
+    display:grid; grid-template-columns:130px 1fr; gap:16px;
+    padding:14px 16px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; box-shadow:var(--shadow);
+  }
+  @media(max-width:560px){ .spec li{grid-template-columns:1fr; gap:5px} }
+  .spec .k{font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.04em; padding-top:2px}
+  .spec .v{font-size:.93rem; color:var(--ink-2)}
+  .spec .v b{color:var(--ink)}
+
+  /* ---------- date forensics ---------- */
+  .forensic{display:grid; gap:12px; margin:20px 0 4px}
+  .frow{
+    display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:center;
+    padding:14px 18px; border-radius:12px; border:1px solid var(--line); background:var(--panel);
+  }
+  .fdate{font-family:var(--mono); font-weight:600; font-size:1rem; color:var(--ink)}
+  .frow .lbl{font-size:.9rem; color:var(--ink-2)}
+  .frow.trap{border-color:var(--accent); background:color-mix(in srgb,var(--accent) 6%,var(--panel))}
+  .frow.truth{border-color:var(--accent-2); background:color-mix(in srgb,var(--accent-2) 8%,var(--panel))}
+  .badge{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; padding:3px 8px; border-radius:5px; white-space:nowrap}
+  .badge.trap{background:var(--accent); color:#fff}
+  .badge.truth{background:var(--accent-2); color:#fff}
+  .badge.neutral{background:var(--panel-2); color:var(--ink-3); border:1px solid var(--line)}
+
+  blockquote{
+    margin:18px 0; padding:14px 20px; border-left:3px solid var(--accent);
+    background:var(--panel); border-radius:0 10px 10px 0; color:var(--ink-2); font-style:italic;
+  }
+
+  footer{padding:40px 0 70px; color:var(--ink-3); font-size:.85rem}
+  footer .rule{height:1px; background:var(--line); margin-bottom:22px}
+  footer a{color:var(--accent-2); text-decoration:none}
+  footer a:hover{color:var(--accent)}
+  .meta{font-family:var(--mono); font-size:11.5px; line-height:1.9}
+</style>
+</head>
+<body>
+<button class="toggle" id="themeBtn" aria-label="Toggle theme">◐ theme</button>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="kicker">Research briefing · Claude Docs · topic: define-outcomes</p>
+    <h1>Tell the agent what <em>“done”</em> looks like.</h1>
+    <p class="dek">A read of Anthropic’s “Define outcomes” page for Managed Agents — what the article
+      actually argues, where the environment fits in, and the one thing you asked about most: <strong>when it was published.</strong></p>
+    <div class="srcbar">
+      <span>SOURCE ▸ <a href="https://platform.claude.com/docs/en/managed-agents/define-outcomes">platform.claude.com/docs/en/managed-agents/define-outcomes</a></span>
+      <span>REVIEWED ▸ 2026-07-16</span>
+    </div>
+  </header>
+
+  <!-- ============ DATE VERDICT ============ -->
+  <div class="verdict">
+    <div class="vtop">
+      <span class="stamp">Date verdict</span>
+      <h2>First published <span style="color:var(--accent-2)">May 6, 2026</span></h2>
+      <span class="bigdate">≠ 2026-04-01</span>
+    </div>
+    <p>The page carries <strong>no visible “published” or “last updated” date</strong>, and the docs
+      sitemap has no <code>lastmod</code> field. The real date comes from the Claude Platform
+      <strong>release notes</strong>: on <strong>May 6, 2026</strong>, “Multiagent orchestration and
+      <strong>Outcomes</strong> are now in public beta.” The parent feature, Managed Agents, launched
+      <strong>April 8, 2026</strong>.</p>
+    <p>The page has been <strong>edited since</strong> — it references the <code>agent-memory-2026-07-22</code>
+      beta header — so it was last touched no earlier than <strong>late July 2026</strong>.</p>
+    <div class="foot">
+      ⚠︎ <strong>Don’t be fooled by the dates printed inside the article.</strong> The line specifying
+      the outcome for the agent uses the beta header <code>managed-agents-2026-04-01</code> — that’s an
+      <strong>API version tag, not a publish date</strong> — and the <code>2026-03-25</code> timestamps
+      are <strong>fictional examples</strong> in the sample event payloads. Full breakdown in §4.
+    </div>
+  </div>
+
+  <!-- ============ 1 · THE ARGUMENT ============ -->
+  <section id="argument">
+    <div class="snum">§1</div>
+    <h2 class="sh">What the article is trying to say</h2>
+    <p class="sub">The whole page turns on a single shift in how you drive an agent.</p>
+    <p class="lead">Instead of steering an agent turn-by-turn, you <strong>declare the finish line once</strong>
+      and let it self-correct until it crosses. You send a <code>user.define_outcome</code> event and the
+      agent starts working immediately — no follow-up message required.</p>
+    <blockquote>“An outcome tells the session what the end result should look like and how to measure its
+      quality. The agent works toward that target, self-evaluating and iterating until the outcome is met.”</blockquote>
+
+    <div class="cards">
+      <div class="card">
+        <h3><span class="dot"></span> Defining “done”</h3>
+        <p>Two parts: a plain-language <strong>description</strong> of the deliverable, plus a required
+          <em class="term">rubric</em> — a markdown doc of explicit, independently gradeable criteria.</p>
+        <p>Good: <em>“The CSV contains a price column with numeric values.”</em> Bad: <em>“The data looks
+          good.”</em> Vague criteria produce noisy grades because each line is scored on its own.</p>
+      </div>
+      <div class="card two">
+        <h3><span class="dot"></span> How it checks itself</h3>
+        <p>The harness auto-provisions a <em class="term">grader</em> that scores the artifact against the
+          rubric in a <strong>separate context window</strong>, so it isn’t swayed by the agent’s own reasoning.</p>
+        <p>The grader’s pass/fail explanation is handed back to the agent, which takes another pass.
+          That feedback loop <em>is</em> the feature.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 · THE LOOP ============ -->
+  <section id="loop">
+    <div class="snum">§2</div>
+    <h2 class="sh">The outcome loop</h2>
+    <p class="sub">Define → work → grade → revise, until satisfied or out of iterations (default 3, max 20).</p>
+
+    <div class="loop">
+      <div class="step"><div class="n">01</div><div class="t">Define</div><div class="d">Send description + rubric</div></div>
+      <div class="step"><div class="n">02</div><div class="t">Work</div><div class="d">Agent builds the artifact</div></div>
+      <div class="step grade"><div class="n">03</div><div class="t">Grade</div><div class="d">Separate grader scores each criterion</div></div>
+      <div class="step"><div class="n">04</div><div class="t">Revise</div><div class="d">Feedback → next iteration</div></div>
+      <div class="step"><div class="n">05</div><div class="t">Deliver</div><div class="d">Files land in the sandbox</div></div>
+    </div>
+    <div class="loopback"><span>↺ steps 02–04 repeat on</span><span class="arc"></span><span><code>needs_revision</code></span></div>
+
+    <p style="margin-top:26px">Every evaluation ends with a <code>result</code> that decides what happens next:</p>
+    <table class="tbl">
+      <thead><tr><th>Result</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag ok">satisfied</span></td><td>Rubric met. Session goes <code>idle</code>.</td></tr>
+        <tr><td><span class="tag">needs_revision</span></td><td>Agent starts a new iteration cycle.</td></tr>
+        <tr><td><span class="tag warn">max_iterations_reached</span></td><td>One final acknowledgment turn, then <code>idle</code>. No further grading.</td></tr>
+        <tr><td><span class="tag bad">failed</span></td><td>Rubric doesn’t apply to the deliverable (e.g. description and rubric contradict). Session goes <code>idle</code>.</td></tr>
+        <tr><td><span class="tag">interrupted</span></td><td>A <code>user.interrupt</code> paused the current outcome so a new one can start.</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:16px; font-size:.92rem; color:var(--ink-2)">Deliverables are written to
+      <code>/mnt/session/outputs/</code> inside the sandbox and pulled out via the Files API once the
+      session is idle. Only one outcome runs at a time, but you can chain them in sequence.</p>
+  </section>
+
+  <!-- ============ 3 · ENVIRONMENT ============ -->
+  <section id="environment">
+    <div class="snum">§3</div>
+    <h2 class="sh">Where the environment fits in</h2>
+    <p class="sub">Your honest question — and the honest answer.</p>
+    <p><strong>The “Define outcomes” page barely covers the environment.</strong> It mentions it only in
+      passing: a session is created against a <em>pre-existing</em> <code>environment_id</code>, and the
+      agent runs in a sandbox that writes to <code>/mnt/session/outputs/</code>. The article’s focus is
+      outcomes, graders, and rubrics — not the environment.</p>
+    <p>The environment’s importance is really its <strong>own page</strong>
+      (<a href="https://platform.claude.com/docs/en/managed-agents/environments" style="color:var(--accent-2)">managed-agents/environments</a>),
+      which you asked me to fold in. Here’s why it matters: the environment <strong>is the world the agent
+      acts in</strong> — get it wrong and even a perfect rubric can’t be satisfied.</p>
+
+    <ul class="spec">
+      <li><span class="k">what it is</span><span class="v">A reusable <b>cloud sandbox config</b>. Create once, reference its ID per session. Many sessions share one environment, but each gets a <b>fresh, isolated Linux container</b> — no shared filesystem state.</span></li>
+      <li><span class="k">packages</span><span class="v">Pre-installs tools before the agent starts (<b>apt, cargo, gem, go, npm, pip</b>), cached across sessions. If a rubric needs <code>pandas</code> or <code>ffmpeg</code>, this is where it comes from.</span></li>
+      <li><span class="k">networking</span><span class="v"><b>unrestricted</b> (default, minus a safety blocklist) or <b>limited</b> to an <code>allowed_hosts</code> list. Docs recommend <code>limited</code> + least privilege for production.</span></li>
+      <li><span class="k">runtimes</span><span class="v">Common languages, databases and utilities ship pre-installed in every cloud sandbox.</span></li>
+      <li><span class="k">lifecycle</span><span class="v">Environments persist until archived or deleted. <b>Not versioned</b> — keep your own record of changes so you know which config a session ran under.</span></li>
+    </ul>
+    <p style="margin-top:20px; font-size:.95rem; color:var(--ink-2)"><strong>The link to outcomes:</strong>
+      the outcome says <em>what</em> “done” means; the environment decides <em>whether the agent has the
+      tools, packages, and network reach to get there.</em> A rubric that expects an <code>.xlsx</code>
+      built with a library the sandbox never installed will simply keep failing.</p>
+  </section>
+
+  <!-- ============ 4 · DATE FORENSICS ============ -->
+  <section id="dates">
+    <div class="snum">§4</div>
+    <h2 class="sh">Date forensics</h2>
+    <p class="sub">Three dates appear in or around the article. Only one is the publish date.</p>
+
+    <div class="forensic">
+      <div class="frow truth">
+        <div><span class="badge truth">the answer</span></div>
+        <div><span class="fdate">May 6, 2026</span> &nbsp;<span class="lbl">— Outcomes enters public beta, per the Claude Platform release notes. This is when the article went live.</span></div>
+      </div>
+      <div class="frow">
+        <div><span class="badge neutral">context</span></div>
+        <div><span class="fdate">April 8, 2026</span> &nbsp;<span class="lbl">— Managed Agents (the parent feature) launches in public beta.</span></div>
+      </div>
+      <div class="frow trap">
+        <div><span class="badge trap">trap</span></div>
+        <div><span class="fdate">2026-04-01</span> &nbsp;<span class="lbl">— appears ~31× as <code>managed-agents-2026-04-01</code>. It’s the <b>beta-header API version tag</b>, not a date of publication.</span></div>
+      </div>
+      <div class="frow trap">
+        <div><span class="badge trap">trap</span></div>
+        <div><span class="fdate">2026-03-25</span> &nbsp;<span class="lbl">— the <code>processed_at</code> timestamps in the JSON samples. <b>Fictional example data.</b></span></div>
+      </div>
+      <div class="frow">
+        <div><span class="badge neutral">last edit</span></div>
+        <div><span class="fdate">≥ July 22, 2026</span> &nbsp;<span class="lbl">— page cites <code>agent-memory-2026-07-22</code>, so it was revised at least that recently.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="rule"></div>
+    <p class="meta">
+      SOURCES<br>
+      ▸ <a href="https://platform.claude.com/docs/en/managed-agents/define-outcomes">Define outcomes — Claude Docs</a><br>
+      ▸ <a href="https://platform.claude.com/docs/en/managed-agents/environments">Cloud environment setup — Claude Docs</a><br>
+      ▸ <a href="https://platform.claude.com/docs/en/release-notes/api">Claude Platform release notes</a> (May 6 · Apr 8, 2026)<br>
+      ▸ <a href="https://claude.com/blog/new-in-claude-managed-agents">New in Claude Managed Agents — blog</a>
+    </p>
+    <p class="meta" style="margin-top:16px; color:var(--ink-3)">
+      Research briefing compiled 2026-07-16. Dates verified against release notes and page metadata;
+      no publish date is displayed on the source page itself.
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  // theme toggle: auto -> light -> dark -> auto
+  const btn = document.getElementById('themeBtn');
+  const root = document.documentElement;
+  const order = ['auto','light','dark'];
+  const label = {auto:'◐ auto', light:'☀ light', dark:'☾ dark'};
+  function set(t){ root.setAttribute('data-theme', t); btn.textContent = label[t]; try{localStorage.setItem('do-theme',t)}catch(e){} }
+  let cur = 'auto';
+  try{ const s = localStorage.getItem('do-theme'); if(s && order.includes(s)) cur = s; }catch(e){}
+  set(cur);
+  btn.addEventListener('click', ()=>{ cur = order[(order.indexOf(cur)+1)%order.length]; set(cur); });
+</script>
+</body>
+</html>
