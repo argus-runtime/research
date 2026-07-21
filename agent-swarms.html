@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Swarms & Model Economics — a read</title>
+<style>
+  :root{
+    --bg:#f7f6f3; --panel:#ffffff; --panel-2:#eeece7;
+    --ink:#16181a; --ink-2:#535a5f; --ink-3:#868f95;
+    --line:#e2e0da; --line-2:#edebe6;
+    --c:#5b53d6;          /* agent-swarms accent */
+    --c-soft:#efeefc;
+    --s1:#5b53d6; --s2:#0b8168;   /* chart series: planner / worker */
+    --good:#0e7c66; --warn:#b4531f;
+    --accent:#16181a;
+    --mono:"SFMono-Regular",ui-monospace,"Menlo","Consolas",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
+    --shadow:0 1px 0 rgba(0,0,0,.03), 0 18px 44px -30px rgba(20,25,30,.4);
+  }
+  @media (prefers-color-scheme:dark){
+    :root[data-theme="auto"]{
+      --bg:#0e0f11; --panel:#16181b; --panel-2:#1d2024;
+      --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
+      --line:#262a2f; --line-2:#1e2226;
+      --c:#9a92f7; --c-soft:#20213a; --good:#3fbfa1; --warn:#e8834a;
+      --s1:#9a92f7; --s2:#3fbfa1;
+      --accent:#eceef0;
+      --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e0f11; --panel:#16181b; --panel-2:#1d2024;
+    --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
+    --line:#262a2f; --line-2:#1e2226;
+    --c:#9a92f7; --c-soft:#20213a; --good:#3fbfa1; --warn:#e8834a;
+      --s1:#9a92f7; --s2:#3fbfa1;
+    --accent:#eceef0;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px}
+  a{color:var(--c)}
+  .toggle{position:fixed;top:14px;right:14px;z-index:20;font-family:var(--mono);font-size:11px;letter-spacing:.05em;background:var(--panel);color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;box-shadow:var(--shadow)}
+  .toggle:hover{color:var(--ink);border-color:var(--ink-3)}
+  .home{position:fixed;top:14px;left:14px;z-index:20;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-decoration:none;background:var(--panel);color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;box-shadow:var(--shadow)}
+  .home:hover{color:var(--ink);border-color:var(--ink-3)}
+
+  /* ---- header ---- */
+  header{padding:80px 0 34px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+  .swarm{position:absolute;inset:0;pointer-events:none;opacity:.5}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--c);margin:0 0 18px;display:flex;align-items:center;gap:10px;position:relative}
+  .kick::before{content:"";width:26px;height:1px;background:var(--c)}
+  h1{font-size:clamp(2rem,6.2vw,3rem);font-weight:800;letter-spacing:-.03em;line-height:1.04;margin:0 0 16px;position:relative}
+  .dek{color:var(--ink-2);font-size:1.08rem;max-width:58ch;margin:0;position:relative}
+  .src{margin-top:24px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);position:relative;line-height:1.9}
+  .src a{color:var(--ink-3);text-decoration:underline;text-underline-offset:2px}
+  .src a:hover{color:var(--c)}
+
+  main{padding:10px 0 10px}
+  section{padding:38px 0;border-bottom:1px solid var(--line-2)}
+  .n{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--c);margin:0 0 10px}
+  h2{font-size:1.5rem;font-weight:750;letter-spacing:-.02em;line-height:1.15;margin:0 0 14px}
+  h3{font-size:1.05rem;font-weight:700;margin:26px 0 8px;letter-spacing:-.01em}
+  p{margin:0 0 15px;color:var(--ink)}
+  section p{color:var(--ink)}
+  .lead{color:var(--ink-2)}
+  strong{font-weight:680}
+  em{font-style:italic}
+
+  /* ---- tl;dr ---- */
+  .tldr{background:var(--c-soft);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:22px 24px;margin:34px 0 0}
+  .tldr .n{color:var(--c)}
+  .tldr p{margin:0;font-size:1.05rem;color:var(--ink)}
+  .tldr b{color:var(--c)}
+
+  /* ---- planner/worker diagram ---- */
+  .flow{display:grid;gap:14px;margin:22px 0 6px}
+  .node{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+  .node .role{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:6px}
+  .node .desc{color:var(--ink-2);font-size:.94rem}
+  .node.worker .role{color:var(--good)}
+  .fan{display:flex;justify-content:center;color:var(--ink-3);font-size:1.1rem;margin:-4px 0}
+  .workers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .wk{background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:11px 12px;text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--ink-2);letter-spacing:.04em}
+  .wk b{display:block;color:var(--good);font-size:11px;margin-bottom:3px;letter-spacing:.1em}
+  @media(max-width:520px){ .workers{grid-template-columns:repeat(2,1fr)} }
+
+  /* ---- svg diagrams ---- */
+  .diagram{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 16px 8px;margin:22px 0 6px;box-shadow:var(--shadow)}
+  .diagram svg{display:block;width:100%;height:auto}
+  .diagram text{font-family:var(--mono);font-size:11px;letter-spacing:.03em}
+  .diagram .edge{fill:none;stroke:var(--c);stroke-width:1.4;opacity:.42}
+  .diagram .arrow{fill:none;stroke:var(--ink-3);stroke-width:1.4}
+  .diagram .np{fill:var(--c-soft);stroke:var(--c);stroke-width:1.4}
+  .diagram .nw{fill:var(--panel-2);stroke:var(--good);stroke-width:1.4}
+  .diagram .box{fill:var(--panel-2);stroke:var(--line);stroke-width:1.2}
+  .diagram .chip{fill:var(--panel);stroke:var(--line);stroke-width:1}
+  .diagram .tp{fill:var(--c);font-weight:700}
+  .diagram .tw{fill:var(--good);font-weight:700}
+  .diagram .tl{fill:var(--ink-2)}
+  .diagram .th{fill:var(--ink);font-weight:700;letter-spacing:.08em}
+
+  /* ---- abstraction ladder ---- */
+  .ladder{display:grid;gap:8px;margin:18px 0 6px}
+  .rung{display:grid;grid-template-columns:118px 1fr;gap:12px;align-items:center}
+  .rung .era{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.04em;text-align:right}
+  .rung .unit{height:26px;border-radius:6px;background:var(--c);display:flex;align-items:center;padding:0 11px;color:#fff;font-size:11.5px;white-space:nowrap;box-shadow:var(--shadow)}
+  .rung:last-child .unit{background:var(--c);font-weight:700}
+  .rung:nth-child(1) .unit{opacity:.55}
+  .rung:nth-child(2) .unit{opacity:.7}
+  .rung:nth-child(3) .unit{opacity:.85}
+
+  /* ---- tables ---- */
+  .twrap{overflow-x:auto;margin:20px 0 6px;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;background:var(--panel)}
+  th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line-2);white-space:nowrap}
+  thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600;background:var(--panel-2)}
+  tbody tr:last-child td{border-bottom:none}
+  td.num{font-family:var(--mono);text-align:right}
+  tr.win td{background:var(--c-soft)}
+  tr.win td:first-child{font-weight:700}
+  .pill{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;letter-spacing:.04em}
+  .pill.g{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+  .pill.w{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+  .cap{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin:8px 2px 0}
+
+  /* ---- stat compare (old vs new) ---- */
+  .stats{display:grid;gap:12px;margin:20px 0 6px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;box-shadow:var(--shadow)}
+  .stat .lab{font-size:.9rem;color:var(--ink-2);margin-bottom:10px}
+  .bars{display:grid;grid-template-columns:64px 1fr;gap:8px 12px;align-items:center;font-family:var(--mono);font-size:11px}
+  .bars .who{color:var(--ink-3);letter-spacing:.06em}
+  .bar{height:20px;border-radius:5px;position:relative;min-width:2px}
+  .bar.old{background:color-mix(in srgb,var(--warn) 55%,transparent)}
+  .bar.new{background:var(--c)}
+  .bar span{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#fff;font-size:10px;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+  .bar.tiny span{right:auto;left:calc(100% + 8px);color:var(--ink-2);text-shadow:none}
+
+  /* ---- token/cost split chart (palette validated: CVD ΔE 20.0, normal ΔE 24.5) ---- */
+  .split{margin:24px 0 6px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-bottom:16px}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .legend i{width:11px;height:11px;border-radius:3px;flex:none}
+  .legend i.p{background:var(--s1)} .legend i.w{background:var(--s2)}
+  .sbar{margin-bottom:18px}
+  .sbar .lab{font-size:.9rem;color:var(--ink);margin-bottom:8px;font-weight:600}
+  .track{display:flex;gap:2px;height:36px}
+  .seg{border-radius:4px;display:flex;align-items:center;padding:0 11px;font-family:var(--mono);font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;min-width:3px}
+  .seg.p{background:var(--s1)} .seg.w{background:var(--s2);justify-content:flex-end}
+  .sbar .under{margin-top:7px;font-family:var(--mono);font-size:11px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px}
+  .sbar .under b{font-weight:600}
+  .sbar .under .lp{color:var(--s1)} .sbar .under .lw{color:var(--s2)}
+  .flip{text-align:center;font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.1em;margin:-4px 0 14px}
+
+  /* ---- glossary ---- */
+  .gloss{display:grid;gap:0;margin:18px 0 6px;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+  .gloss > div{display:grid;grid-template-columns:170px 1fr;gap:16px;padding:13px 18px;background:var(--panel);border-bottom:1px solid var(--line-2)}
+  .gloss > div:last-child{border-bottom:none}
+  .gloss dt{font-weight:700;font-size:.92rem;color:var(--c)}
+  .gloss dd{margin:0;color:var(--ink-2);font-size:.92rem}
+  @media(max-width:520px){ .gloss > div{grid-template-columns:1fr;gap:3px} }
+
+  /* ---- generic list ---- */
+  ul.clean{list-style:none;padding:0;margin:14px 0}
+  ul.clean li{position:relative;padding:0 0 0 22px;margin-bottom:11px;color:var(--ink)}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--c)}
+  ul.clean li b{font-weight:680}
+  .fail li::before{background:var(--warn)}
+
+  /* ---- callout ---- */
+  .note{border:1px dashed var(--line);border-left:3px solid var(--warn);border-radius:10px;padding:16px 20px;margin:22px 0 0;background:var(--panel)}
+  .note .n{color:var(--warn)}
+  .note p{margin:0;color:var(--ink-2);font-size:.96rem}
+
+  .quote{border-left:3px solid var(--c);padding:4px 0 4px 20px;margin:22px 0;font-size:1.12rem;line-height:1.5;letter-spacing:-.01em;color:var(--ink)}
+  .quote cite{display:block;margin-top:8px;font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+
+  footer{padding:38px 0 74px;color:var(--ink-3);font-size:.84rem}
+  .meta{font-family:var(--mono);font-size:11.5px;line-height:1.9}
+</style>
+</head>
+<body>
+<a class="home" href="index.html">← index</a>
+<button class="toggle" id="t">◐ theme</button>
+<div class="wrap">
+
+  <header>
+    <svg class="swarm" viewBox="0 0 760 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g fill="none" stroke="var(--c)" stroke-width="1" opacity="0.5">
+        <line x1="380" y1="46" x2="180" y2="150"/><line x1="380" y1="46" x2="300" y2="150"/>
+        <line x1="380" y1="46" x2="460" y2="150"/><line x1="380" y1="46" x2="600" y2="150"/>
+        <line x1="180" y1="150" x2="120" y2="250"/><line x1="180" y1="150" x2="240" y2="250"/>
+        <line x1="460" y1="150" x2="420" y2="250"/><line x1="460" y1="150" x2="540" y2="250"/>
+        <line x1="600" y1="150" x2="660" y2="250"/>
+      </g>
+      <g fill="var(--c)">
+        <circle cx="380" cy="46" r="5"/>
+        <circle cx="180" cy="150" r="3.5"/><circle cx="300" cy="150" r="3.5"/><circle cx="460" cy="150" r="3.5"/><circle cx="600" cy="150" r="3.5"/>
+        <circle cx="120" cy="250" r="2.5"/><circle cx="240" cy="250" r="2.5"/><circle cx="420" cy="250" r="2.5"/><circle cx="540" cy="250" r="2.5"/><circle cx="660" cy="250" r="2.5"/>
+      </g>
+    </svg>
+    <p class="kick">Article read · agent swarms</p>
+    <h1>Swarms, and the economics<br>of who thinks.</h1>
+    <p class="dek">Cursor's argument that a frontier <em>planner</em> steering a fleet of cheap
+      <em>workers</em> beats one big agent — not because it's parallel, but because it keeps context clean.
+      And that the cost of intelligence collapses when you only pay for it where decisions happen.</p>
+    <p class="src">
+      Source · Cursor Research, “Agent Swarms and Model Economics”<br>
+      <a href="https://cursor.com/blog/agent-swarm-model-economics">cursor.com/blog/agent-swarm-model-economics</a><br>
+      Read &amp; digested 2026-07-20
+    </p>
+  </header>
+
+  <main>
+
+    <section style="padding-top:34px">
+      <p class="n">00 · Start here</p>
+      <h2>If you've never heard of any of this</h2>
+      <p class="lead">Skip this section if you already work with AI coding agents. Otherwise, everything
+        below rests on five ideas:</p>
+
+      <ul class="clean">
+        <li><b>Who wrote it.</b> <b>Cursor</b> is a company that makes an AI-powered code editor. This is
+          a post from their research team about their own system — so it's a vendor describing its own
+          results (see the caveat at the end).</li>
+        <li><b>What an “agent” is.</b> An AI model that doesn't just answer questions but <em>does work</em>
+          in a loop — reads files, writes code, runs commands, checks results, tries again. Think of it as
+          a tireless junior developer you give a task to.</li>
+        <li><b>What a “swarm” is.</b> Instead of one agent working alone, you run <em>hundreds at once</em>
+          on the same codebase. The obvious problem — and the subject of this article — is that they trip
+          over each other constantly.</li>
+        <li><b>Frontier vs. cheap models.</b> The smartest AI models (“frontier” models) cost a lot per
+          unit of text processed. Weaker models are dramatically cheaper but make more mistakes. The whole
+          economic question is <em>which jobs actually need the expensive one</em>.</li>
+        <li><b>Why cost is the story.</b> AI models are billed per <b>token</b> — roughly a word-fragment
+          of text read or written. A long agent run burns billions of them, so the same finished result
+          can cost $1,000 or $10,000 depending purely on which model did which part.</li>
+      </ul>
+
+      <p><b>The experiment in one sentence:</b> they asked a swarm of AI agents to rebuild
+        <b>SQLite</b> — a real, widely-used database program — from scratch in the
+        <b>Rust</b> programming language, working only from the written manual, then measured how correct
+        the result was and what it cost under different model combinations.</p>
+
+      <div class="note" style="border-left-color:var(--c)">
+        <p class="n" style="color:var(--c)">◆ Why that's a hard task</p>
+        <p>SQLite is not a toy. It's one of the most deployed pieces of software on earth — it runs inside
+          browsers, phones, and operating systems — and its manual is <b>835 pages</b>. Rebuilding it
+          correctly is a genuine multi-engineer, multi-month project, which is exactly why it makes a
+          serious test.</p>
+      </div>
+    </section>
+
+    <div class="tldr">
+      <p class="n">The one-liner</p>
+      <p>One expensive, smart AI (the <b>planner</b>) breaks the job into ever-smaller pieces; a crowd of
+        cheap, fast AIs (the <b>workers</b>) build those pieces. Asked to rebuild the
+        <b>835-page SQLite manual in Rust</b> with no source code, no tests and no internet,
+        <b>every</b> setup eventually passed <b>100%</b> of a hidden correctness test. They differed
+        only on price — <b>$1,339</b> when a smart planner directed cheap workers, versus <b>$10,565</b>
+        when one strong model did everything. <b>Same result, ~8× the price.</b> And the reason it works
+        isn't that many agents run at once — it's that splitting the roles keeps each AI's attention
+        uncluttered.</p>
+    </div>
+
+    <section>
+      <p class="n">01 · What a swarm actually is</p>
+      <h2>Two roles, arranged as a tree</h2>
+      <p class="lead">The system isn't “N copies of an agent racing.” Cursor's framing: a large task
+        <em>naturally takes the shape of a tree</em> — a goal at the root that subdivides recursively into
+        basic units of work. Two specialized roles walk that tree.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 700 236" role="img" aria-label="Recursive planner-to-worker decomposition tree">
+          <g class="edge">
+            <path d="M350 46 C 350 78, 130 74, 130 100"/>
+            <path d="M350 46 L 350 100"/>
+            <path d="M350 46 C 350 78, 570 74, 570 100"/>
+            <path d="M130 130 C 130 164, 60 160, 60 192"/>
+            <path d="M130 130 C 130 164, 200 160, 200 192"/>
+            <path d="M570 130 C 570 164, 500 160, 500 192"/>
+            <path d="M570 130 C 570 164, 640 160, 640 192"/>
+          </g>
+          <!-- root planner -->
+          <rect class="np" x="288" y="12" width="124" height="34" rx="9"/>
+          <text class="tp" x="350" y="33" text-anchor="middle">◆ PLANNER · goal</text>
+          <!-- level 2 -->
+          <rect class="np" x="70" y="100" width="120" height="30" rx="8"/>
+          <text class="tp" x="130" y="119" text-anchor="middle">◆ sub-planner</text>
+          <rect class="nw" x="296" y="100" width="108" height="30" rx="8"/>
+          <text class="tw" x="350" y="119" text-anchor="middle">● worker</text>
+          <rect class="np" x="510" y="100" width="120" height="30" rx="8"/>
+          <text class="tp" x="570" y="119" text-anchor="middle">◆ sub-planner</text>
+          <!-- leaves -->
+          <rect class="nw" x="8"   y="192" width="104" height="30" rx="8"/>
+          <text class="tw" x="60"  y="211" text-anchor="middle">● worker</text>
+          <rect class="nw" x="148" y="192" width="104" height="30" rx="8"/>
+          <text class="tw" x="200" y="211" text-anchor="middle">● worker</text>
+          <rect class="nw" x="448" y="192" width="104" height="30" rx="8"/>
+          <text class="tw" x="500" y="211" text-anchor="middle">● worker</text>
+          <rect class="nw" x="588" y="192" width="104" height="30" rx="8"/>
+          <text class="tw" x="640" y="211" text-anchor="middle">● worker</text>
+        </svg>
+      </div>
+      <p class="cap">Depth is adaptive — “the swarm's shape grows to cover the problem's contours,” so compute and context scale with the task, not a fixed fan-out.</p>
+
+      <div class="flow" style="margin-top:20px">
+        <div class="node">
+          <div class="role">◆ Planner — frontier model</div>
+          <div class="desc">Holds the goal and the architecture. Subdivides recursively, makes the design
+            decisions and trade-offs, delegates down — and <em>never implements</em>, so its context
+            never fills with low-level detail.</div>
+        </div>
+        <div class="node worker" style="margin-top:8px">
+          <div class="role">● Workers — fast, cheap model</div>
+          <div class="desc">Each executes one narrow, delegated leaf and <em>never plans</em> — so it can
+            spend its entire context on the single slice in front of it, uncluttered by anyone else's
+            problem.</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <p class="n">02 · The real mechanism</p>
+      <h2>It wins on context, not parallelism</h2>
+      <p class="lead">Key idea: an AI model has a <b>context window</b> — a limited amount of text it can
+        hold in mind at once. Everything it's read, written, and been told competes for that space. Fill it
+        with clutter and the model loses the thread. Think of it as a desk that only fits so much paper.</p>
+
+      <p>The headline surprise: the gains come mostly from <strong>context efficiency</strong>, not from
+        doing many things at once. A single agent has to keep low-level implementation detail
+        <em>and</em> high-level strategy on that one desk — so it drifts. Split the roles and the
+        planner stays fixed on architecture while each worker's desk holds nothing but its own narrow
+        job, uncluttered by anyone else's problem.</p>
+      <p class="lead">Framed another way: the swarm is a <strong>compiler for intent</strong> — the planner
+        lowers a vague spec into progressively more concrete instructions, and infrastructure resolves
+        the conflicts that scale inevitably produces.</p>
+
+      <h3>Each AI jump raised the unit of abstraction</h3>
+      <p>Cursor's ladder: every capability step let a human hand off a bigger chunk of intent. Swarms move
+        the unit from a file to an <em>entire specification</em>.</p>
+      <div class="ladder">
+        <div class="rung"><span class="era">autocomplete</span><span class="unit">a line</span></div>
+        <div class="rung"><span class="era">early LLMs</span><span class="unit">a code block</span></div>
+        <div class="rung"><span class="era">agents</span><span class="unit">a file / feature</span></div>
+        <div class="rung"><span class="era">swarms</span><span class="unit">an entire specification</span></div>
+      </div>
+    </section>
+
+    <section>
+      <p class="n">03 · The experiment</p>
+      <h2>Reimplement all of SQLite, in Rust, blind</h2>
+      <p>The task: <strong>implement the entire 835-page SQLite manual in Rust</strong>. To force genuine
+        construction rather than recall, the swarm was <strong>denied the source code, the test suites,
+        the SQLite binary, and internet access</strong>. It had the spec and nothing else.</p>
+
+      <h3>How it was graded</h3>
+      <ul class="clean">
+        <li><b>Hidden oracle.</b> Runs were scored with <code>sqllogictest</code> — millions of queries
+          with known-correct answers; the grade is the fraction the swarm's database gets right. The swarm
+          was <em>deliberately not told the suite existed</em>, so it couldn't teach to the test.</li>
+        <li><b>Fixed budget.</b> A <b>4-hour</b> cutoff for every configuration.</li>
+        <li><b>Manual audit.</b> After each run they hand-reviewed the code and the trajectory, checking
+          for cheating and shortcuts and confirming the system was built out evenly — not faked at the
+          edges to pass queries.</li>
+      </ul>
+
+      <h3>Four configurations</h3>
+      <p>Same task, four model setups. <b>GPT-5.5, Grok 4.5, Opus 4.8 and Fable 5</b> are frontier
+        (expensive, capable) models from different AI labs; <b>Composer 2.5</b> is Cursor's own fast, cheap
+        model. “planner → worker” denotes a <em>hybrid</em>, where each role runs a different model; the
+        other two run one model in both roles.</p>
+      <p class="lead">One term you'll need below: the <b>harness</b> is the surrounding machinery that
+        organises the agents — how work is split, how commits are merged, how conflicts get resolved. It's
+        not the AI model; it's the scaffolding around it. Cursor compares an <b>old harness</b> against
+        their rebuilt <b>new harness</b>, holding the model constant, to isolate how much the scaffolding
+        alone matters.</p>
+
+      <div class="twrap">
+        <table>
+          <thead>
+            <tr><th>Configuration (all on the new harness)</th><th>At 4-hr cutoff</th><th>Final</th><th>Cost</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>GPT-5.5 <span class="pill w">both roles</span></td><td class="num">73–85% band</td><td class="num">100%</td><td class="num">$10,565</td></tr>
+            <tr><td>Grok 4.5 <span class="pill w">both roles</span></td><td class="num">80%</td><td class="num">100%</td><td class="num">—</td></tr>
+            <tr><td>Fable 5 → Composer 2.5 <span class="pill g">hybrid</span></td><td class="num">73–85% band</td><td class="num">100%</td><td class="num">$2,090</td></tr>
+            <tr class="win"><td>Opus 4.8 → Composer 2.5 <span class="pill g">hybrid</span></td><td class="num">73–85% band</td><td class="num">100%</td><td class="num">$1,339</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">The article reports the 4-hr scores as a band (73–85%) across the new runs rather than
+        per-config, so only Grok’s 80% is individually attributable. Highlighted row = cheapest full pass.</p>
+
+      <p style="margin-top:22px">This is the result worth sitting with: <strong>every configuration on the new
+        harness eventually passed 100% of the suite</strong>. The models did not separate on whether they
+        could finish — they separated on <strong>what finishing cost</strong>. At the 4-hour cutoff the new
+        runs sat at <strong>73–85% and still climbing</strong>; the same swarm on the <em>old</em> harness
+        ranged <strong>11–77%</strong> and plateaued. Grok 4.5 makes the cleanest before/after: <strong>80%
+        in four hours</strong> on the new harness, versus an old-harness run that “spiraled” and had to be
+        paused before hour two.</p>
+
+      <p>So the spread that matters is the price of the identical outcome — <strong>$1,339 to $10,565, an
+        ~8× gap for the same 100%</strong>. That is what makes this an economics story rather than a
+        capability one.</p>
+    </section>
+
+    <section>
+      <p class="n">04 · The infrastructure problem</p>
+      <h2>They had to build a new version-control system</h2>
+      <p>At swarm scale you hit failure modes no human team produces. The key architectural choice:
+        <strong>every change routes through a custom VCS</strong> — “so it is where collisions first become
+        visible,” and several coordination mechanisms are implemented directly inside it.</p>
+
+      <p class="lead">Three terms first. <b>Version control</b> is the system that lets many people edit the
+        same codebase without losing each other's work; <b>Git</b> is the near-universal tool for it. A
+        <b>commit</b> is one saved change. A <b>merge conflict</b> is what happens when two parties edit the
+        same lines and the system can't decide which version wins — a human normally resolves it by hand.
+        Now imagine hundreds of agents generating those conflicts every second.</p>
+
+      <p>Git simply could not carry the load. Cursor's earlier browser swarm “peaked at roughly <strong>1,000
+        commits per hour</strong> on Git”; the new system “peaks at around <strong>1,000 commits per
+        second</strong>” — a ~3,600× jump in raw throughput.</p>
+
+      <div class="note" style="border-left-color:var(--c);margin:0 0 6px">
+        <p class="n" style="color:var(--c)">◆ Don't confuse these two numbers</p>
+        <p>Throughput went <em>up</em> ~3,600×, but the disciplined runs <em>commit far less</em> — ~968 in
+          two hours versus the old run's 68,000. One is <b>capacity</b> (what the plumbing can absorb at
+          peak), the other is <b>behaviour</b> (how much redundant thrash the coordination layer prevents).
+          The new harness is built to survive a flood, and then arranges not to produce one.</p>
+      </div>
+
+      <div class="diagram">
+        <svg viewBox="0 0 700 200" role="img" aria-label="Every agent commit routes through the custom version control system before reaching the codebase">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-3)"/>
+            </marker>
+          </defs>
+          <!-- stage 1: agents -->
+          <rect class="box" x="12" y="62" width="150" height="76" rx="11"/>
+          <text class="th" x="87" y="94" text-anchor="middle">1,000s of</text>
+          <text class="th" x="87" y="110" text-anchor="middle">agent commits</text>
+          <text class="tl" x="87" y="126" text-anchor="middle">planners + workers</text>
+          <!-- arrow -->
+          <line class="arrow" x1="166" y1="100" x2="212" y2="100" marker-end="url(#ah)"/>
+          <!-- stage 2: VCS -->
+          <rect class="np" x="216" y="24" width="268" height="152" rx="14"/>
+          <text class="tp" x="350" y="48" text-anchor="middle">◈ CUSTOM VERSION CONTROL</text>
+          <rect class="chip" x="230" y="62" width="118" height="44" rx="8"/>
+          <text class="tl" x="289" y="82" text-anchor="middle">merge</text>
+          <text class="tl" x="289" y="97" text-anchor="middle">arbiter</text>
+          <rect class="chip" x="352" y="62" width="118" height="44" rx="8"/>
+          <text class="tl" x="411" y="82" text-anchor="middle">doc</text>
+          <text class="tl" x="411" y="97" text-anchor="middle">reconciler</text>
+          <rect class="chip" x="230" y="114" width="118" height="44" rx="8"/>
+          <text class="tl" x="289" y="134" text-anchor="middle">file</text>
+          <text class="tl" x="289" y="149" text-anchor="middle">decomposer</text>
+          <rect class="chip" x="352" y="114" width="118" height="44" rx="8"/>
+          <text class="tl" x="411" y="134" text-anchor="middle">breakage</text>
+          <text class="tl" x="411" y="149" text-anchor="middle">relay</text>
+          <!-- arrow -->
+          <line class="arrow" x1="488" y1="100" x2="534" y2="100" marker-end="url(#ah)"/>
+          <!-- stage 3: codebase -->
+          <rect class="nw" x="538" y="62" width="150" height="76" rx="11"/>
+          <text class="tw" x="613" y="94" text-anchor="middle">one coherent</text>
+          <text class="tw" x="613" y="110" text-anchor="middle">codebase</text>
+          <text class="tl" x="613" y="126" text-anchor="middle">9 crates, evenly built</text>
+        </svg>
+      </div>
+      <p class="cap">The VCS is the choke point — so it's also where each failure mode below gets caught and resolved.</p>
+
+      <p style="margin-top:22px">The article names four collapse modes at scale, each with the mechanism
+        that answers it:</p>
+
+      <ul class="clean fail">
+        <li><b>Split-brain</b> — two planners independently build the same concept two different ways.
+          <span style="color:var(--ink-2)">→ planners make design decisions <em>themselves</em> rather than
+          delegating them, and must ensure no two subtrees decide the same question. Decisions live in
+          shared <b>design docs</b>; dependent code carries a <b>compile-checked reference</b> back to its
+          doc, so when planners contradict each other a reconciler merges the docs and the fix propagates
+          downstream.</span></li>
+        <li><b>Merge collisions</b> — workers constantly overwrite or abandon each other's edits on shared
+          files. <span style="color:var(--ink-2)">→ a <b>neutral third-party agent</b> arbitrates each
+          conflict on everyone's behalf, optimizing only for impartial, efficient resolution — like a
+          merge queue.</span></li>
+        <li><b>Megafiles</b> — hot files bloat and become the site of constant collisions.
+          <span style="color:var(--ink-2)">→ workers can <b>flag</b> a bloated file; new commits are
+          blocked and an outside agent <b>decomposes</b> it into smaller modules.</span></li>
+        <li><b>Ossification</b> — agents stop daring to touch core code. <span style="color:var(--ink-2)">→
+          <b>licensed intentional breakage</b>: an agent judging a core change worthwhile makes a focused
+          out-of-scope patch and leaves a comment explaining why; the compiler carries the change through,
+          and everything depending on the old design fails to build — surfacing the work to whoever must
+          fix it.</span></li>
+      </ul>
+
+      <h3>The new harness does less, better</h3>
+      <p class="lead">Same Grok 4.5 comparison, old harness vs new — fewer commits, orders of magnitude
+        fewer conflicts, a codebase 6× smaller:</p>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="lab">Crates created — a “crate” is Rust's word for a self-contained module. Fewer means a
+            tidier design; the old build had <em>three separate SQL packages</em> doing overlapping jobs.</div>
+          <div class="bars">
+            <span class="who">old</span><div class="bar old" style="width:100%"><span>54 crates</span></div>
+            <span class="who">new</span><div class="bar new" style="width:16.7%"><span>9</span></div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="lab">Commits generated</div>
+          <div class="bars">
+            <span class="who">old</span><div class="bar old" style="width:100%"><span>68,000 / 2 hrs</span></div>
+            <span class="who">new</span><div class="bar new tiny" style="width:1.5%"><span>~1,000 per 2 hrs</span></div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="lab">Merge conflicts accumulated</div>
+          <div class="bars">
+            <span class="who">old</span><div class="bar old" style="width:100%"><span>70,000+</span></div>
+            <span class="who">new</span><div class="bar new tiny" style="width:1.5%"><span>&lt;1,000 over 4 hrs</span></div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="lab">Conflicts on the single hottest file <em>(old: touched by 1,173 different agents)</em></div>
+          <div class="bars">
+            <span class="who">old</span><div class="bar old" style="width:100%"><span>7,771</span></div>
+            <span class="who">new</span><div class="bar new tiny" style="width:1%"><span>47</span></div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="lab">Final codebase size (Fable 5 mix)</div>
+          <div class="bars">
+            <span class="who">old</span><div class="bar old" style="width:100%"><span>64,305 lines</span></div>
+            <span class="who">new</span><div class="bar new" style="width:15.4%"><span>9,908 lines</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <p class="n">05 · The economics</p>
+      <h2>Tokens flow one way, dollars the other</h2>
+      <p>This is the “model economics” punchline. <strong>Workers do 69–90% of the tokens</strong> across
+        configs — the sheer volume of work. But the <strong>dollars</strong> land elsewhere, because
+        planner tokens (frontier model) cost far more each.</p>
+
+      <div class="split">
+        <div class="legend">
+          <span><i class="p"></i> Planner — frontier model</span>
+          <span><i class="w"></i> Workers — cheap model</span>
+        </div>
+
+        <div class="sbar">
+          <div class="lab">Share of tokens</div>
+          <div class="track">
+            <div class="seg p" style="width:15%"></div>
+            <div class="seg w" style="width:85%">workers do the volume</div>
+          </div>
+          <div class="under">
+            <span class="lp"><b>a small fraction</b></span>
+            <span class="lw"><b>69–90%+ of all tokens</b></span>
+          </div>
+        </div>
+
+        <div class="flip">▲ ▼ &nbsp; THE INVERSION &nbsp; ▲ ▼</div>
+
+        <div class="sbar">
+          <div class="lab">Share of cost — Opus 4.8 → Composer 2.5 run, $1,339 total</div>
+          <div class="track">
+            <div class="seg p" style="width:69%">planner carries the bill</div>
+            <div class="seg w" style="width:31%">$411</div>
+          </div>
+          <div class="under">
+            <span class="lp"><b>≈ $928 · roughly two-thirds</b></span>
+            <span class="lw"><b>$411 · entire worker fleet</b></span>
+          </div>
+        </div>
+      </div>
+      <p class="cap">A tiny sliver of tokens carries most of the bill — because that sliver is where the
+        thinking happens. Token shares are the reported range (“at least 69%, over 90% in most”); the
+        planner’s ≈$928 is derived as $1,339 total − $411 workers, consistent with the article’s
+        “roughly two-thirds.”</p>
+
+      <p style="margin-top:22px">The clearest cut is the <strong>worker fleet</strong> in isolation. Doing
+        essentially the same execution work, GPT-5.5's workers ran up <strong>$9,373</strong>; swap in cheap
+        Composer 2.5 under an Opus planner and the entire worker fleet costs <strong>$411</strong> — a ~23×
+        drop on the bulk of the labor.</p>
+
+      <blockquote class="quote">
+        “Few moments in a large task genuinely require frontier intelligence — the original decomposition,
+        the design decisions, and certain trade-offs.”
+        <cite>— why the hybrid works: pay for the smart model only where it moves the needle</cite>
+      </blockquote>
+
+      <p>That's the whole optimization: concentrate frontier intelligence at the decision points, and push
+        the enormous volume of execution onto a cheap model. You're not buying less intelligence — you're
+        buying it only where it changes the outcome.</p>
+    </section>
+
+    <section>
+      <p class="n">06 · Two things holding it together</p>
+      <h2>Redundant review, and a shared field guide</h2>
+      <ul class="clean">
+        <li><b>Decorrelated review lenses.</b> Reviewers are handed deliberately different slices — one
+          gets the worker's full transcript, one only its output, one nothing but the codebase — and run on
+          <em>different models with different training and personality</em>. No single lens catches
+          everything, but decorrelated lenses stack the way self-driving systems reach above-human
+          reliability with no single perfect component. The economics help: review is far cheaper than the
+          work it audits, so the compute is high-return.</li>
+        <li><b>The field guide.</b> A folder <em>owned entirely by the agents</em>, whose
+          <code>index.md</code> is auto-injected into every agent at start; their only constraint is a line
+          budget, so they curate it themselves. Because the AI models can't learn from experience mid-run
+          (their internal “weights” are fixed once training ends), this shared note-file is the <em>only</em>
+          way one agent's hard-won lesson reaches the next — so it's precisely the <em>surprise
+          encounters</em> that are worth writing down, and the next agent's path gets shorter.
+          Cursor names the principle: <b>stigmergy</b>, how ants and termites coordinate without talking —
+          they shape the environment, and the environment shapes the next organism.</li>
+      </ul>
+    </section>
+
+    <section style="border-bottom:none">
+      <p class="n">07 · How to hold this</p>
+      <h2>The takeaway — and a caveat</h2>
+      <p>The durable idea is clean and worth keeping regardless of the specifics: <strong>separate the
+        agent that decides from the agents that do</strong>, keep each one's context narrow, and pay for
+        frontier intelligence only at the decision points. Architecture (hierarchical decomposition) plus
+        operational discipline (custom VCS, arbitration, stacked review) is what turns scale from a
+        liability into a result.</p>
+
+      <div class="note">
+        <p class="n">⚠ Read the numbers as illustrative</p>
+        <p>This is a vendor post from Cursor, and the model names (GPT-5.5, Grok 4.5, Composer 2.5, plus
+          Opus 4.8 / Fable 5) and the round figures read as forward-looking positioning rather than an
+          audited, reproducible benchmark. Trust the <em>shape</em> of the argument — hybrid beats
+          monolith, cost concentrates in the planner — more than any single dollar amount.</p>
+      </div>
+    </section>
+
+    <section style="border-bottom:none">
+      <p class="n">Glossary</p>
+      <h2>Every term, in one line</h2>
+      <dl class="gloss">
+        <div><dt>Agent</dt><dd>An AI model that works in a loop — reads, writes code, runs it, checks, retries — rather than just answering once.</dd></div>
+        <div><dt>Swarm</dt><dd>Hundreds of agents working on the same codebase at the same time.</dd></div>
+        <div><dt>Planner / Worker</dt><dd>The two roles. The planner (smart, expensive) decides and splits the work; workers (cheap, fast) build the pieces.</dd></div>
+        <div><dt>Frontier model</dt><dd>A top-tier, expensive AI model. Here: GPT-5.5, Grok 4.5, Opus 4.8, Fable 5.</dd></div>
+        <div><dt>Composer 2.5</dt><dd>Cursor's own fast, cheap model, used as the worker in the hybrid runs.</dd></div>
+        <div><dt>Token</dt><dd>A word-fragment of text. AI models are billed per token, so token count = cost.</dd></div>
+        <div><dt>Context window</dt><dd>The limited amount of text a model can hold in mind at once — its “desk space.”</dd></div>
+        <div><dt>Harness</dt><dd>The scaffolding around the agents (how work is split, merged, and de-conflicted) — not the model itself.</dd></div>
+        <div><dt>SQLite</dt><dd>A real, extremely widely-used database program; the thing the swarm was told to rebuild.</dd></div>
+        <div><dt>Rust</dt><dd>The programming language they had to build it in.</dd></div>
+        <div><dt>sqllogictest</dt><dd>SQLite's own test suite — millions of queries with known-correct answers; the grade is the fraction the rebuild gets right.</dd></div>
+        <div><dt>Git / commit / merge conflict</dt><dd>Git = the standard tool for many people editing one codebase. A commit = one saved change. A merge conflict = two edits to the same lines that must be reconciled.</dd></div>
+        <div><dt>Crate</dt><dd>Rust's word for a self-contained code module.</dd></div>
+      </dl>
+    </section>
+
+  </main>
+
+  <footer>
+    <p class="meta">Read of an external article · not affiliated with Cursor<br>
+      Built with Claude Code · served via GitHub Pages · 2026-07-20</p>
+  </footer>
+
+</div>
+<script>
+  const b=document.getElementById('t'),r=document.documentElement;
+  const o=['auto','light','dark'],l={auto:'◐ auto',light:'☀ light',dark:'☾ dark'};
+  function s(t){r.setAttribute('data-theme',t);b.textContent=l[t];try{localStorage.setItem('swarm-theme',t)}catch(e){}}
+  let c='auto';try{const v=localStorage.getItem('swarm-theme');if(v&&o.includes(v))c=v}catch(e){}
+  s(c); b.onclick=()=>{c=o[(o.indexOf(c)+1)%o.length];s(c)};
+</script>
+</body>
+</html>

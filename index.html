@@ -11,6 +11,7 @@
     --line:#e2e0da; --line-2:#edebe6;
     --a1:#b4531f;  /* define-outcomes */
     --a2:#0e7c66;  /* reconciliation */
+    --a3:#5b53d6;  /* agent-swarms */
     --accent:#16181a;
     --mono:"SFMono-Regular",ui-monospace,"Menlo","Consolas",monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
@@ -21,7 +22,7 @@
       --bg:#0e0f11; --panel:#16181b; --panel-2:#1d2024;
       --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
       --line:#262a2f; --line-2:#1e2226;
-      --a1:#e8834a; --a2:#3fbfa1; --accent:#eceef0;
+      --a1:#e8834a; --a2:#3fbfa1; --a3:#9a92f7; --accent:#eceef0;
       --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
     }
   }
@@ -29,7 +30,7 @@
     --bg:#0e0f11; --panel:#16181b; --panel-2:#1d2024;
     --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
     --line:#262a2f; --line-2:#1e2226;
-    --a1:#e8834a; --a2:#3fbfa1; --accent:#eceef0;
+    --a1:#e8834a; --a2:#3fbfa1; --a3:#9a92f7; --accent:#eceef0;
     --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
   }
   *{box-sizing:border-box}
@@ -78,10 +79,27 @@
     <p class="kick">Research workspace</p>
     <h1>Research notes.</h1>
     <p class="dek">Self-contained briefings — one artifact per topic. Each reads on mobile, in light or dark.</p>
-    <p class="count" id="count">2 topics</p>
+    <p class="count" id="count">3 topics</p>
   </header>
 
   <main>
+    <a class="card" style="--c:var(--a3)" href="agent-swarms.html">
+      <span class="go">→</span>
+      <div class="slug"><span class="dot"></span> agent-swarms · 2026-07-20</div>
+      <h2>Swarms &amp; the economics of who thinks</h2>
+      <p>A read of Cursor’s “Agent Swarms and Model Economics”: a frontier planner steering cheap
+         workers, why it wins on context rather than parallelism, the SQLite-in-Rust experiment, the
+         custom VCS built to survive swarm scale, and the tokens-vs-dollars cost story — with a caveat
+         on the vendor numbers.</p>
+      <div class="foot">
+        <span class="chip">article read</span>
+        <span class="chip">agents</span>
+        <span class="chip">model economics</span>
+        <span class="chip">planner / worker</span>
+        <span class="chip">cost analysis</span>
+      </div>
+    </a>
+
     <a class="card" style="--c:var(--a2)" href="reconciliation.html">
       <span class="go">→</span>
       <div class="slug"><span class="dot"></span> reconciliation · 2026-07-16</div>
@@ -114,7 +132,7 @@
   </main>
 
   <footer>
-    <p class="meta">Built with Claude Code · served via GitHub Pages<br>Last updated 2026-07-16</p>
+    <p class="meta">Built with Claude Code · served via GitHub Pages<br>Last updated 2026-07-20</p>
   </footer>
 
 </div>
