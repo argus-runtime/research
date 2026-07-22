@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluating AI agents — Amazon's lessons</title>
+<style>
+  :root{
+    --bg:#f7f6f3; --panel:#ffffff; --panel-2:#eeece7;
+    --ink:#16181a; --ink-2:#535a5f; --ink-3:#868f95;
+    --line:#e2e0da; --line-2:#edebe6;
+    --a1:#b4531f;  /* foundation-model layer / shopping */
+    --a2:#0e7c66;  /* component layer / customer service */
+    --a3:#5b53d6;  /* system layer / seller multi-agent */
+    --a4:#1f6f9c;  /* artifact chrome accent */
+    --warn-bg:#fbf2e6; --warn-line:#e7c99a; --warn-ink:#8a5a12;
+    --accent:#16181a;
+    --mono:"SFMono-Regular",ui-monospace,"Menlo","Consolas",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
+    --shadow:0 1px 0 rgba(0,0,0,.03), 0 18px 44px -30px rgba(20,25,30,.4);
+  }
+  @media (prefers-color-scheme:dark){
+    :root[data-theme="auto"]{
+      --bg:#0e0f11; --panel:#16181b; --panel-2:#1d2024;
+      --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
+      --line:#262a2f; --line-2:#1e2226;
+      --a1:#e8834a; --a2:#3fbfa1; --a3:#9a92f7; --a4:#57b6e0;
+      --warn-bg:#241d10; --warn-line:#5a4620; --warn-ink:#e0b268;
+      --accent:#eceef0;
+      --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e0f11; --panel:#16181b; --panel-2:#1d2024;
+    --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
+    --line:#262a2f; --line-2:#1e2226;
+    --a1:#e8834a; --a2:#3fbfa1; --a3:#9a92f7; --a4:#57b6e0;
+    --warn-bg:#241d10; --warn-line:#5a4620; --warn-ink:#e0b268;
+    --accent:#eceef0;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.62;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:820px;margin:0 auto;padding:0 22px}
+  a{color:var(--a4)}
+  .toggle{position:fixed;top:14px;right:14px;z-index:20;font-family:var(--mono);font-size:11px;letter-spacing:.05em;background:var(--panel);color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;box-shadow:var(--shadow)}
+  .toggle:hover{color:var(--ink);border-color:var(--ink-3)}
+  .home{position:fixed;top:14px;left:14px;z-index:20;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-decoration:none;background:var(--panel);color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;box-shadow:var(--shadow)}
+  .home:hover{color:var(--ink);border-color:var(--ink-3)}
+
+  header{padding:80px 0 32px;border-bottom:1px solid var(--line)}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--a4);margin:0 0 18px;display:flex;align-items:center;gap:10px}
+  .kick::before{content:"";width:26px;height:1px;background:var(--a4)}
+  h1{font-size:clamp(2rem,6vw,3rem);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:0 0 16px}
+  .dek{color:var(--ink-2);font-size:1.1rem;max-width:62ch;margin:0 0 22px}
+  .byline{font-family:var(--mono);font-size:12px;color:var(--ink-3);line-height:1.9;border-top:1px dashed var(--line);padding-top:16px}
+  .byline b{color:var(--ink-2);font-weight:600}
+
+  main{padding:8px 0 10px}
+  section{padding:40px 0;border-bottom:1px solid var(--line-2)}
+  h2{font-size:1.5rem;font-weight:750;letter-spacing:-.02em;margin:0 0 6px;display:flex;gap:12px;align-items:baseline}
+  h2 .n{font-family:var(--mono);font-size:.8rem;color:var(--a4);font-weight:600;flex:none}
+  .lede{color:var(--ink-2);font-size:1.02rem;margin:0 0 22px;max-width:64ch}
+  h3{font-size:1.08rem;font-weight:700;letter-spacing:-.01em;margin:26px 0 8px}
+  p{margin:0 0 14px}
+  strong{font-weight:650}
+  em.inf{font-style:normal;color:var(--ink-3);font-family:var(--mono);font-size:.82em;border:1px solid var(--line);border-radius:5px;padding:1px 6px;margin-left:4px;white-space:nowrap}
+
+  /* TL;DR */
+  .tldr{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--a4);border-radius:14px;padding:24px 26px;margin:30px 0 6px;box-shadow:var(--shadow)}
+  .tldr h2{font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--a4);margin:0 0 14px;font-family:var(--mono);font-weight:600}
+  .tldr ul{margin:0;padding-left:20px}
+  .tldr li{margin:0 0 9px;color:var(--ink);font-size:.98rem}
+  .tldr li:last-child{margin-bottom:0}
+  .tldr b{color:var(--ink)}
+
+  /* stat row */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:26px 0 4px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px;box-shadow:var(--shadow)}
+  .stat .v{font-size:1.7rem;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--a4)}
+  .stat .l{font-size:.8rem;color:var(--ink-2);margin-top:8px;line-height:1.4}
+  @media(max-width:640px){ .stats{grid-template-columns:repeat(2,1fr)} }
+
+  /* quote / pull */
+  blockquote{margin:20px 0;padding:14px 20px;border-left:3px solid var(--a4);background:var(--panel-2);border-radius:0 10px 10px 0;color:var(--ink);font-size:1.02rem}
+  blockquote cite{display:block;margin-top:8px;font-style:normal;font-family:var(--mono);font-size:.76rem;color:var(--ink-3)}
+
+  /* figure + caption */
+  figure{margin:26px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 20px 16px;box-shadow:var(--shadow)}
+  figure svg{display:block;width:100%;height:auto}
+  figcaption{font-size:.82rem;color:var(--ink-3);margin-top:14px;line-height:1.5;border-top:1px dashed var(--line);padding-top:12px}
+  figcaption b{color:var(--ink-2)}
+
+  /* flow diagram (HTML, reflows) */
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0}
+  .fstep{flex:1 1 150px;min-width:150px;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:14px 15px;position:relative}
+  .fstep .fn{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--a4);text-transform:uppercase;margin-bottom:6px}
+  .fstep .ft{font-weight:700;font-size:.96rem;margin-bottom:4px}
+  .fstep .fd{font-size:.82rem;color:var(--ink-2);line-height:1.45}
+  .farrow{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:var(--a4)}
+  @media(max-width:560px){
+    .flow{flex-direction:column}
+    .farrow{width:100%;height:24px;transform:rotate(90deg)}
+  }
+
+  /* metric taxonomy grid */
+  .mgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:20px}
+  @media(max-width:620px){ .mgrid{grid-template-columns:1fr} }
+  .mcard{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--mc,var(--a4));border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+  .mcard h4{margin:0 0 3px;font-size:1rem;font-weight:700}
+  .mcard .sub{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:12px}
+  .mcard dl{margin:0}
+  .mcard dt{font-weight:650;font-size:.9rem;margin-top:10px}
+  .mcard dt:first-child{margin-top:0}
+  .mcard dd{margin:2px 0 0;font-size:.85rem;color:var(--ink-2);line-height:1.5}
+  .mcard dd q{font-style:italic}
+  .qv{color:var(--ink);border-bottom:1px dotted var(--ink-3)}
+
+  /* case study cards */
+  .case{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:0;margin:20px 0;overflow:hidden;box-shadow:var(--shadow)}
+  .case .chead{padding:18px 22px 16px;border-bottom:1px solid var(--line-2);border-left:5px solid var(--cc)}
+  .case .ctag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--cc);margin-bottom:6px}
+  .case .chead h3{margin:0;font-size:1.15rem}
+  .case .cbody{padding:16px 22px 20px}
+  .case .row{margin-bottom:12px}
+  .case .row:last-child{margin-bottom:0}
+  .case .rk{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px}
+  .case .rv{font-size:.92rem;color:var(--ink);line-height:1.55}
+  .case .rv b{color:var(--ink)}
+  .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+  .pill{font-family:var(--mono);font-size:10.5px;color:var(--cc);border:1px solid var(--line);border-radius:20px;padding:3px 10px;background:var(--panel-2)}
+
+  /* lessons */
+  .lesson{display:flex;gap:16px;padding:18px 0;border-bottom:1px dashed var(--line)}
+  .lesson:last-child{border-bottom:none}
+  .lesson .ln{font-family:var(--mono);font-weight:700;font-size:1.3rem;color:var(--a4);flex:none;width:34px;line-height:1}
+  .lesson h3{margin:0 0 5px;font-size:1.05rem}
+  .lesson p{margin:0;color:var(--ink-2);font-size:.94rem}
+
+  /* caveat */
+  .caveat{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:12px;padding:18px 22px;margin:28px 0 0}
+  .caveat h3{margin:0 0 8px;color:var(--warn-ink);font-size:.95rem;display:flex;gap:8px;align-items:center}
+  .caveat p{margin:0;color:var(--warn-ink);font-size:.9rem;line-height:1.55}
+  .caveat p+p{margin-top:9px}
+
+  /* tools list */
+  .tools{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  @media(max-width:560px){ .tools{grid-template-columns:1fr} }
+  .tool{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 16px}
+  .tool b{display:block;font-size:.95rem;margin-bottom:3px}
+  .tool span{font-size:.84rem;color:var(--ink-2)}
+
+  /* glossary */
+  .gloss dt{font-weight:700;font-size:.94rem;margin-top:14px;color:var(--ink)}
+  .gloss dt:first-child{margin-top:0}
+  .gloss dd{margin:2px 0 0;font-size:.9rem;color:var(--ink-2);line-height:1.55}
+
+  footer{padding:40px 0 80px;color:var(--ink-3);font-size:.84rem}
+  .src{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:20px}
+  .src .sl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+  .src a{word-break:break-all;font-size:.88rem}
+  .meta{font-family:var(--mono);font-size:11.5px;line-height:1.9}
+</style>
+</head>
+<body>
+<a class="home" href="index.html">← index</a>
+<button class="toggle" id="t">◐ theme</button>
+
+<div class="wrap">
+
+  <header>
+    <p class="kick">AWS Machine Learning Blog · article read</p>
+    <h1>How Amazon grades its AI agents</h1>
+    <p class="dek">A close read of Amazon's field guide to <b>evaluating agentic AI</b> — the
+      framework, the metric taxonomy, and three production case studies. Rebuilt for someone who
+      has never read the post and doesn't work in AI.</p>
+    <div class="byline">
+      <b>Source:</b> "Evaluating AI agents: real-world lessons from building agentic systems at Amazon"<br>
+      <b>Authors:</b> Yunfei Bai, Allie Colin, Kashif Imran, Winnie Xiong &nbsp;·&nbsp; <b>Published:</b> Feb 18, 2026<br>
+      <b>This read:</b> 2026-07-22
+    </div>
+  </header>
+
+  <div class="tldr">
+    <h2>The 60-second version</h2>
+    <ul>
+      <li>An <b>AI agent</b> is an LLM that doesn't just answer — it <b>plans, calls tools, remembers,
+        and takes multi-step actions</b> to finish a task. That extra machinery is exactly what old
+        LLM tests can't see.</li>
+      <li>Amazon's answer is a two-part framework: a <b>standard evaluation workflow</b> (how you run
+        an assessment) plus an <b>evaluation library</b> (what you measure), organized in
+        <b>three layers</b> — the model, the components, and the whole system.</li>
+      <li>The metric list is broad on purpose: <b>quality, task completion, tool use, memory,
+        conversation, reasoning, and safety</b> — because optimizing one and ignoring the rest
+        produces an agent that looks good and fails in production.</li>
+      <li>Three real Amazon agents anchor it: a <b>Shopping Assistant</b> (onboarding thousands of
+        tools), a <b>Customer Service</b> agent (routing intent), and a <b>Seller Assistant</b>
+        (a multi-agent team that needs its <em>coordination</em> graded, not just each member).</li>
+      <li>The recurring lesson: <b>automated metrics get you most of the way, humans close the gap</b>,
+        and you keep measuring in production forever — evaluation is a loop, not a launch gate.</li>
+    </ul>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">1,000s</div><div class="l">agents built across Amazon orgs since 2025<sup>*</sup></div></div>
+    <div class="stat"><div class="v">100s–1,000s</div><div class="l">tools a single agent may draw on</div></div>
+    <div class="stat"><div class="v">months</div><div class="l">to onboard those APIs by hand</div></div>
+    <div class="stat"><div class="v">3</div><div class="l">production case studies in the post</div></div>
+  </div>
+  <p style="font-size:.78rem;color:var(--ink-3);margin-top:10px"><sup>*</sup> The post's figures are
+    order-of-magnitude phrasings ("thousands," "hundreds, sometimes thousands"), not audited counts —
+    read them as scale, not precision. See the vendor caveat at the end.</p>
+
+  <main>
+
+    <!-- 1 -->
+    <section id="why">
+      <h2><span class="n">01</span> Why grading an agent isn't grading a chatbot</h2>
+      <p class="lede">Start here if "agent" and "LLM" sound like the same thing.</p>
+      <p>A <strong>large language model (LLM)</strong> — the technology behind ChatGPT, Claude, and
+        Amazon's own models — is, at its core, a text predictor: give it a prompt, it returns words.
+        You can grade one with a fixed test: ask a question, compare its answer to the right answer.
+        That's a <strong>benchmark</strong>, and the field has thousands of them.</p>
+      <p>An <strong>AI agent</strong> wraps an LLM in the ability to <em>act</em>. Given a goal
+        ("refund this order," "find me running shoes under $80"), it decides <b>what steps to take</b>,
+        <b>which external tools to call</b> <em class="inf">a "tool" = an API, database, or web
+        service the agent can invoke</em>, <b>reads the results</b>, remembers context, and loops until
+        the job is done. The answer is no longer one sentence — it's a <strong>trajectory</strong>:
+        a whole sequence of decisions and actions.</p>
+      <p>That breaks the old test. A benchmark scores the final sentence; it can't see that the agent
+        picked the wrong tool, then got lucky, or reached a right-looking answer through broken
+        reasoning that will fail on the next case. This is the article's central claim:</p>
+      <blockquote>
+        "While single-model benchmarks serve as a crucial foundation for assessing individual LLM
+        performance in LLM-driven applications, agentic AI systems require a fundamental shift in
+        evaluation methodologies."
+        <cite>— verbatim, AWS ML Blog</cite>
+      </blockquote>
+      <p>So you have to grade the <em>journey</em>, not just the destination — and grade the pieces
+        (tool choice, memory, planning) separately from the whole. That is what the rest of the
+        framework is built to do.</p>
+    </section>
+
+    <!-- 2 -->
+    <section id="framework">
+      <h2><span class="n">02</span> The framework: a workflow plus a library</h2>
+      <p class="lede">Two moving parts — one is the <em>process</em>, the other is the
+        <em>measuring kit</em>.</p>
+      <p>Amazon splits the problem in two, described verbatim as
+        <q class="qv">"a generic evaluation workflow that standardizes assessment procedures across
+        diverse agent implementations, and an agent evaluation library."</q> Think of it as a
+        <b>recipe</b> (the workflow — the same steps every team follows) and a <b>pantry</b>
+        (the library — the reusable stock of metrics you pull from).</p>
+
+      <h3>The workflow — four repeatable steps</h3>
+      <figure>
+        <div class="flow">
+          <div class="fstep"><div class="fn">Step 1</div><div class="ft">Feed in traces</div><div class="fd">Point the system at <b>trace files</b> — recorded logs of an agent's runs, captured offline or live in production.</div></div>
+          <div class="farrow" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="fstep"><div class="fn">Step 2</div><div class="ft">Generate metrics</div><div class="fd">The library auto-computes <b>default + custom metrics</b> from those traces — no bespoke code per agent.</div></div>
+          <div class="farrow" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="fstep"><div class="fn">Step 3</div><div class="ft">Visualize</div><div class="fd">Results land in <b>dashboards / S3</b> <em class="inf">Amazon's file storage</em> so teams can see per-trace behaviour.</div></div>
+          <div class="farrow" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="fstep"><div class="fn">Step 4</div><div class="ft">Audit &amp; monitor</div><div class="fd">Ongoing performance checks with <b>humans in the loop</b> running periodic audits.</div></div>
+        </div>
+        <figcaption><b>The 4-step evaluation workflow.</b> One standard pipeline reused across every
+          agent team: traces in → metrics out → visualized → audited. The human-in-the-loop step
+          (right) is where judgement is added back on top of the automated numbers.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 3 -->
+    <section id="layers">
+      <h2><span class="n">03</span> The evaluation library, in three layers</h2>
+      <p class="lede">The "pantry" is stacked so you can zoom from the raw model up to the whole
+        product.</p>
+      <p>The library evaluates at three altitudes. Grade only the top and you learn <em>that</em> the
+        agent failed but not <em>where</em>; grade only the bottom and you miss whether the product
+        actually helped anyone. You need all three.</p>
+
+      <figure>
+        <svg viewBox="0 0 560 300" role="img" aria-labelledby="layers-title">
+          <title id="layers-title">Three-layer evaluation library: system on top, components in the middle, foundation models at the base</title>
+          <!-- Upper: system -->
+          <rect x="70" y="20" width="420" height="72" rx="10" fill="var(--a3)" opacity="0.14" stroke="var(--a3)" stroke-width="1.5"/>
+          <text x="90" y="46" fill="var(--a3)" font-family="var(--mono)" font-size="12" font-weight="700">UPPER · SYSTEM LEVEL</text>
+          <text x="90" y="68" fill="var(--ink)" font-family="var(--sans)" font-size="14" font-weight="600">Final response · task completion · goal met?</text>
+          <text x="90" y="85" fill="var(--ink-2)" font-family="var(--sans)" font-size="11.5">Did the whole agent do the job — and was it safe and worth the cost?</text>
+
+          <!-- Middle: components -->
+          <rect x="70" y="112" width="420" height="72" rx="10" fill="var(--a2)" opacity="0.14" stroke="var(--a2)" stroke-width="1.5"/>
+          <text x="90" y="138" fill="var(--a2)" font-family="var(--mono)" font-size="12" font-weight="700">MIDDLE · COMPONENT LEVEL</text>
+          <text x="90" y="160" fill="var(--ink)" font-family="var(--sans)" font-size="14" font-weight="600">Intent · memory · reasoning &amp; planning · tool-use</text>
+          <text x="90" y="177" fill="var(--ink-2)" font-family="var(--sans)" font-size="11.5">Grade each moving part on its own, so you know which one broke.</text>
+
+          <!-- Bottom: foundation models -->
+          <rect x="70" y="204" width="420" height="72" rx="10" fill="var(--a1)" opacity="0.14" stroke="var(--a1)" stroke-width="1.5"/>
+          <text x="90" y="230" fill="var(--a1)" font-family="var(--mono)" font-size="12" font-weight="700">BOTTOM · FOUNDATION MODEL</text>
+          <text x="90" y="252" fill="var(--ink)" font-family="var(--sans)" font-size="14" font-weight="600">Benchmark candidate LLMs → pick the engine</text>
+          <text x="90" y="269" fill="var(--ink-2)" font-family="var(--sans)" font-size="11.5">Which base model to power the agent, trading quality vs. latency.</text>
+
+          <!-- zoom arrow -->
+          <g stroke="var(--ink-3)" stroke-width="1.5" fill="none">
+            <path d="M40 262 L40 34" stroke-linecap="round"/>
+            <path d="M34 40 L40 28 L46 40" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <text x="28" y="150" fill="var(--ink-3)" font-family="var(--mono)" font-size="10" transform="rotate(-90 28 150)" text-anchor="middle">zoom out →</text>
+        </svg>
+        <figcaption><b>The three layers of the evaluation library.</b> Bottom = pick the right base
+          model; middle = grade each component (does it choose tools well? recall memory correctly?);
+          top = judge the finished product. Verbatim, the layers benchmark models, then
+          <b>"evaluate the performance of the components of the agent"</b>, then
+          <b>"assess the agent's final response, the task completion, and whether the agent meets the
+          goal."</b></figcaption>
+      </figure>
+    </section>
+
+    <!-- 4 -->
+    <section id="metrics">
+      <h2><span class="n">04</span> What actually gets measured</h2>
+      <p class="lede">The metric taxonomy — grouped by what part of the agent it interrogates. Quoted
+        definitions <q class="qv">look like this</q> and are verbatim from the post; the rest are
+        plain-English descriptions.</p>
+
+      <div class="mgrid">
+        <div class="mcard" style="--mc:var(--a3)">
+          <h4>Final-response quality</h4>
+          <div class="sub">Is the answer itself good?</div>
+          <dl>
+            <dt>Correctness</dt><dd><q class="qv">"The factual accuracy and correctness of an AI assistant's response to a given task."</q></dd>
+            <dt>Faithfulness</dt><dd><q class="qv">"Whether an AI assistant's response remains consistent with the conversation history."</q></dd>
+            <dt>Helpfulness</dt><dd>How well the reply actually addresses what was asked.</dd>
+            <dt>Relevance &amp; conciseness</dt><dd>On-point to the question, and no padding.</dd>
+          </dl>
+        </div>
+
+        <div class="mcard" style="--mc:var(--a3)">
+          <h4>Task completion</h4>
+          <div class="sub">Did the job get done?</div>
+          <dl>
+            <dt>Goal success</dt><dd><q class="qv">"Did the AI assistant successfully complete all user goals within a conversation session."</q></dd>
+            <dt>Goal accuracy</dt><dd>Output compared against a known-correct answer (<em>ground truth</em>).</dd>
+          </dl>
+        </div>
+
+        <div class="mcard" style="--mc:var(--a2)">
+          <h4>Tool use</h4>
+          <div class="sub">Did it pick and call tools well?</div>
+          <dl>
+            <dt>Tool selection accuracy</dt><dd><q class="qv">"Did the AI assistant choose the appropriate tool for a given situation."</q></dd>
+            <dt>Tool parameter accuracy</dt><dd>Did it fill the tool's inputs with the right values?</dd>
+            <dt>Tool call error rate</dt><dd>How often tool invocations fail outright.</dd>
+            <dt>Multi-turn function-calling accuracy</dt><dd>Correct <em>sequencing</em> of tools across a conversation.</dd>
+          </dl>
+        </div>
+
+        <div class="mcard" style="--mc:var(--a2)">
+          <h4>Memory</h4>
+          <div class="sub">Does it recall the right context?</div>
+          <dl>
+            <dt>Context retrieval</dt><dd>Accuracy of what it pulls from memory, and whether it prioritizes the <em>relevant</em> bits.</dd>
+          </dl>
+        </div>
+
+        <div class="mcard" style="--mc:var(--a2)">
+          <h4>Multi-turn conversation</h4>
+          <div class="sub">Does it stay on-task over a chat?</div>
+          <dl>
+            <dt>Topic adherence</dt><dd><q class="qv">"assesses whether the conversation stays on predefined domains and topics."</q></dd>
+            <dt>Topic-adherence refusal</dt><dd>Does it correctly <em>decline</em> off-topic questions?</dd>
+          </dl>
+        </div>
+
+        <div class="mcard" style="--mc:var(--a2)">
+          <h4>Reasoning &amp; planning</h4>
+          <div class="sub">Is the thinking sound, not just the answer?</div>
+          <dl>
+            <dt>Grounding accuracy</dt><dd>Do its understanding, tool choice and chain-of-thought line up?</dd>
+            <dt>Faithfulness / context score</dt><dd>Is each step logically consistent and grounded in context?</dd>
+          </dl>
+        </div>
+
+        <div class="mcard" style="--mc:var(--a1)">
+          <h4>Responsibility &amp; safety</h4>
+          <div class="sub">Is it safe to ship?</div>
+          <dl>
+            <dt>Hallucination</dt><dd><q class="qv">"Do the outputs align with established knowledge, verifiable data, logical inference"</q> — i.e. is it making things up?</dd>
+            <dt>Toxicity &amp; harmfulness</dt><dd>Screening for offensive, hateful, violent or otherwise harmful output.</dd>
+          </dl>
+        </div>
+
+        <div class="mcard" style="--mc:var(--a1)">
+          <h4>Cost &amp; experience</h4>
+          <div class="sub">The business dimensions</div>
+          <dl>
+            <dt>Cost</dt><dd>Compute/latency spend per task — a real agent has a budget.</dd>
+            <dt>Customer experience</dt><dd>The downstream impact on the person the agent serves.</dd>
+          </dl>
+        </div>
+      </div>
+      <p style="font-size:.82rem;color:var(--ink-3);margin-top:16px">Many of these are computed by an
+        <b>LLM-as-a-judge</b> — a second model prompted to score the first agent's output — which is
+        cheap and scalable but must itself be calibrated against human ratings (see Lesson 3).</p>
+    </section>
+
+    <!-- 5 -->
+    <section id="cases">
+      <h2><span class="n">05</span> Three agents, three hard problems</h2>
+      <p class="lede">The framework earns its keep in production. Each case study surfaces a different
+        failure mode — and a different fix.</p>
+
+      <div class="case" style="--cc:var(--a1)">
+        <div class="chead">
+          <div class="ctag">Case 1 · Amazon Shopping Assistant</div>
+          <h3>When your agent has thousands of tools</h3>
+        </div>
+        <div class="cbody">
+          <div class="row"><div class="rk">The problem</div><div class="rv">A shopping agent may need <b>"hundreds, sometimes thousands, of tools from underlying Amazon systems"</b> — search, pricing, reviews, inventory. Wiring each API in by hand <b>"typically takes months to complete."</b> And the more tools it has, the easier it is to pick the wrong one.</div></div>
+          <div class="row"><div class="rk">The fix</div><div class="rv">An <b>LLM-powered self-onboarding system</b> that auto-generates each tool's schema and description, plus <b>cross-org standards</b> for how tools are described — so the agent sees consistent, machine-readable tools. Regression tests run against <b>"golden datasets"</b> synthesized from historical logs.</div></div>
+          <div class="row"><div class="rk">Graded on</div>
+            <div class="pills"><span class="pill">tool selection accuracy</span><span class="pill">tool parameter accuracy</span><span class="pill">multi-turn function-calling</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="case" style="--cc:var(--a2)">
+        <div class="chead">
+          <div class="ctag">Case 2 · Amazon Customer Service Assistant</div>
+          <h3>Understanding what the customer actually wants</h3>
+        </div>
+        <div class="cbody">
+          <div class="row"><div class="rk">The problem</div><div class="rv"><b>Intent detection</b> — reading a customer's message and routing it to the right handler. Get the intent wrong and every downstream step is wrong, no matter how good the rest of the agent is.</div></div>
+          <div class="row"><div class="rk">The fix</div><div class="rv">An <b>LLM-driven simulator</b> that role-plays <b>virtual customer personas</b>, generating diverse, realistic scenarios (grounded in anonymized real interactions) to stress-test routing at scale — far more coverage than hand-written test cases.</div></div>
+          <div class="row"><div class="rk">Graded on</div>
+            <div class="pills"><span class="pill">intent correctness</span><span class="pill">routing accuracy</span><span class="pill">task completion</span><span class="pill">topic adherence</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="case" style="--cc:var(--a3)">
+        <div class="chead">
+          <div class="ctag">Case 3 · Amazon Seller Assistant · multi-agent</div>
+          <h3>Grading a team, not a soloist</h3>
+        </div>
+        <div class="cbody">
+          <div class="row"><div class="rk">The problem</div><div class="rv">This is a <b>multi-agent system</b>: a planner splits a request into subtasks and hands each to a specialist agent. Now you must grade not just each agent but the <b>coordination between them</b> — the part that has no equivalent in a single agent.</div></div>
+
+          <figure style="margin:16px 0 10px;box-shadow:none;border-color:var(--line-2)">
+            <svg viewBox="0 0 560 320" role="img" aria-labelledby="ma-title">
+              <title id="ma-title">Multi-agent orchestration: a planner decomposes a request to three specialist agents, whose results aggregate into a final output</title>
+              <!-- request -->
+              <rect x="205" y="14" width="150" height="34" rx="8" fill="var(--panel-2)" stroke="var(--line)" stroke-width="1.5"/>
+              <text x="280" y="35" text-anchor="middle" fill="var(--ink)" font-family="var(--sans)" font-size="12.5" font-weight="600">User request</text>
+              <!-- planner -->
+              <rect x="170" y="78" width="220" height="46" rx="9" fill="var(--a3)" opacity="0.16" stroke="var(--a3)" stroke-width="1.5"/>
+              <text x="280" y="100" text-anchor="middle" fill="var(--a3)" font-family="var(--sans)" font-size="13.5" font-weight="700">Planner / Orchestrator</text>
+              <text x="280" y="116" text-anchor="middle" fill="var(--ink-2)" font-family="var(--sans)" font-size="10.5">decomposes into subtasks · assigns by capability</text>
+              <!-- specialist agents -->
+              <g font-family="var(--sans)">
+                <rect x="40" y="176" width="140" height="58" rx="9" fill="var(--panel-2)" stroke="var(--a3)" stroke-width="1.3"/>
+                <text x="110" y="200" text-anchor="middle" fill="var(--ink)" font-size="12.5" font-weight="650">Agent A</text>
+                <text x="110" y="217" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">+ tools · domain</text>
+                <rect x="210" y="176" width="140" height="58" rx="9" fill="var(--panel-2)" stroke="var(--a3)" stroke-width="1.3"/>
+                <text x="280" y="200" text-anchor="middle" fill="var(--ink)" font-size="12.5" font-weight="650">Agent B</text>
+                <text x="280" y="217" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">+ tools · domain</text>
+                <rect x="380" y="176" width="140" height="58" rx="9" fill="var(--panel-2)" stroke="var(--a3)" stroke-width="1.3"/>
+                <text x="450" y="200" text-anchor="middle" fill="var(--ink)" font-size="12.5" font-weight="650">Agent C</text>
+                <text x="450" y="217" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">+ tools · domain</text>
+              </g>
+              <!-- final -->
+              <rect x="190" y="270" width="180" height="38" rx="9" fill="var(--a3)" opacity="0.16" stroke="var(--a3)" stroke-width="1.5"/>
+              <text x="280" y="293" text-anchor="middle" fill="var(--a3)" font-family="var(--sans)" font-size="12.5" font-weight="700">Aggregated final output</text>
+              <!-- arrows -->
+              <g stroke="var(--ink-3)" stroke-width="1.5" fill="none">
+                <path d="M280 48 L280 76" marker-end="url(#ah)"/>
+                <path d="M240 124 L120 172" marker-end="url(#ah)"/>
+                <path d="M280 124 L280 172" marker-end="url(#ah)"/>
+                <path d="M320 124 L440 172" marker-end="url(#ah)"/>
+                <path d="M120 234 L250 268" marker-end="url(#ah)"/>
+                <path d="M280 234 L280 268" marker-end="url(#ah)"/>
+                <path d="M440 234 L310 268" marker-end="url(#ah)"/>
+              </g>
+              <defs>
+                <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0 0 L6 3 L0 6 z" fill="var(--ink-3)"/>
+                </marker>
+              </defs>
+            </svg>
+            <figcaption><b>Multi-agent orchestration.</b> The planner fans a request out to specialists
+              and re-assembles their results. The dashed extra metrics below grade the
+              <em>arrows</em>, not just the boxes.</figcaption>
+          </figure>
+
+          <div class="row"><div class="rk">The fix — grade the coordination</div><div class="rv">On top of each agent's individual metrics, three inter-agent metrics: <b>planning score</b> (were subtasks assigned well?), <b>communication score</b> (efficient messaging between agents?), and <b>collaboration success rate</b> (% of subtasks completed). Human review catches emergent, edge-case behaviour the metrics miss.</div></div>
+          <div class="row"><div class="rk">Graded on</div>
+            <div class="pills"><span class="pill">planning score</span><span class="pill">communication score</span><span class="pill">collaboration success rate</span><span class="pill">+ per-agent metrics</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="lessons">
+      <h2><span class="n">06</span> The lessons, distilled</h2>
+      <p class="lede">The four takeaways the authors want you to leave with.</p>
+      <div class="lesson"><div class="ln">1</div><div><h3>Measure every dimension, not your favourite one</h3><p>Quality, performance, responsibility <em>and</em> cost. Optimize one in isolation and you ship an agent that's accurate but slow, or fast but unsafe. Evaluation has to be holistic.</p></div></div>
+      <div class="lesson"><div class="ln">2</div><div><h3>Standard metrics aren't enough — add domain metrics</h3><p>Generic scores must be supplemented with application-specific success criteria, defined <em>with domain experts</em>, so "good" maps to a real business outcome rather than a benchmark number.</p></div></div>
+      <div class="lesson"><div class="ln">3</div><div><h3>Humans in the loop are indispensable</h3><p>Especially for high-stakes decisions. People audit reasoning chains, verify business alignment, produce the ground-truth labels for golden datasets, and <em>calibrate the LLM-as-a-judge</em> so the automated scores can be trusted.</p></div></div>
+      <div class="lesson"><div class="ln">4</div><div><h3>Keep measuring in production, forever</h3><p>Dashboards, alert thresholds and anomaly detection track real-world behaviour continuously; feedback loops trigger retraining and context tweaks. Evaluation is an operating loop, not a one-time launch gate.</p></div></div>
+    </section>
+
+    <!-- 7 -->
+    <section id="tools">
+      <h2><span class="n">07</span> The tooling behind it</h2>
+      <p class="lede">What Amazon points you at to actually run this.</p>
+      <div class="tools">
+        <div class="tool"><b>Amazon Bedrock AgentCore Evaluations</b><span>AWS's managed offering — verbatim, it <q class="qv">"provides automated assessment tools to measure how well your agent or tools perform."</q> This is the productized version of the framework.</span></div>
+        <div class="tool"><b>Strands Agents · LangChain · LangGraph</b><span>Agent-building frameworks that, per the post, <q class="qv">"have built-in evaluation modules"</q> — so some measurement comes free with the toolkit.</span></div>
+        <div class="tool"><b>Amazon S3</b><span>Object storage — where evaluation results and trace outputs are parked for dashboards to read.</span></div>
+        <div class="tool"><b>LLM-driven simulators &amp; golden datasets</b><span>Not products but repeatable techniques: synthesize test cases and personas from historical logs instead of hand-writing them.</span></div>
+      </div>
+
+      <div class="caveat">
+        <h3>⚠ Read this as a vendor source</h3>
+        <p>This is an <b>AWS Machine Learning Blog</b> post, and it culminates in a pitch for
+          <b>Amazon Bedrock AgentCore Evaluations</b>. That doesn't make it wrong — the taxonomy and
+          the layered approach are genuinely useful — but trust <b>the shape of the argument over any
+          single figure</b>.</p>
+        <p>The numbers are deliberately soft: <b>"thousands" of agents</b>, <b>"hundreds, sometimes
+          thousands" of tools</b>, onboarding that takes <b>"months"</b>. These are order-of-magnitude
+          claims to establish scale, not measured statistics — none carry a baseline, a date range, or
+          a methodology. Take them as "this is a big-company-scale problem," not as precise data.</p>
+      </div>
+    </section>
+
+    <!-- glossary -->
+    <section id="glossary">
+      <h2><span class="n">08</span> Glossary</h2>
+      <p class="lede">Every term of art used above, in one clause each.</p>
+      <dl class="gloss">
+        <dt>Agentic AI / AI agent</dt><dd>An LLM given the ability to plan, call external tools, remember, and take multi-step actions toward a goal — not just answer a prompt.</dd>
+        <dt>LLM (large language model)</dt><dd>The text-prediction model at an agent's core (e.g. Claude, GPT, Amazon's Nova/Titan).</dd>
+        <dt>Foundation model</dt><dd>A large pre-trained model used as the base "engine" you build an agent on; picking it is the bottom layer of the library.</dd>
+        <dt>Trajectory</dt><dd>The full sequence of an agent's steps and decisions on a task — the thing you grade instead of just the final answer.</dd>
+        <dt>Trace file</dt><dd>A recorded log of one agent run (its steps, tool calls, outputs), captured offline or live, and fed into evaluation.</dd>
+        <dt>Tool / function calling</dt><dd>An agent invoking an external API, database, or service; "multi-turn function calling" means chaining several such calls correctly.</dd>
+        <dt>Intent detection</dt><dd>Working out what a user actually wants from their message, so the request can be routed correctly.</dd>
+        <dt>Topic adherence</dt><dd>Whether the agent stays within its allowed subject area and refuses off-topic requests.</dd>
+        <dt>Chain-of-thought (CoT)</dt><dd>The model's step-by-step intermediate reasoning; grading its coherence is part of reasoning evaluation.</dd>
+        <dt>Hallucination</dt><dd>Confident output that isn't grounded in real data or valid inference — i.e. the model making things up.</dd>
+        <dt>LLM-as-a-judge</dt><dd>Using a second LLM to score an agent's output automatically; scalable but must be calibrated against human ratings.</dd>
+        <dt>Ground truth</dt><dd>The known-correct answer a metric compares the agent's output against.</dd>
+        <dt>Golden dataset</dt><dd>A curated, trusted set of test cases (often synthesized from historical logs) used for regression testing.</dd>
+        <dt>Human-in-the-loop (HITL)</dt><dd>People inserted into the evaluation process to audit reasoning, label data, and calibrate automated judges.</dd>
+        <dt>Multi-agent system</dt><dd>Several specialist agents coordinated by a planner/orchestrator; needs its coordination graded, not just its members.</dd>
+        <dt>Regression testing</dt><dd>Re-running a fixed test set after a change to confirm nothing that used to work has broken.</dd>
+      </dl>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="src">
+      <div class="sl">Primary source</div>
+      <a href="https://aws.amazon.com/blogs/machine-learning/evaluating-ai-agents-real-world-lessons-from-building-agentic-systems-at-amazon/" target="_blank" rel="noopener">aws.amazon.com/blogs/machine-learning/evaluating-ai-agents-real-world-lessons-from-building-agentic-systems-at-amazon</a>
+    </div>
+    <p class="meta">Built with Claude Code · served via GitHub Pages<br>
+      Quoted definitions are verbatim from the source; uncited descriptions are this artifact's plain-English paraphrase.<br>
+      Topic read: 2026-07-22</p>
+  </footer>
+
+</div>
+<script>
+  const b=document.getElementById('t'),r=document.documentElement;
+  const o=['auto','light','dark'],l={auto:'◐ auto',light:'☀ light',dark:'☾ dark'};
+  function s(t){r.setAttribute('data-theme',t);b.textContent=l[t];try{localStorage.setItem('eval-theme',t)}catch(e){}}
+  let c='auto';try{const v=localStorage.getItem('eval-theme');if(v&&o.includes(v))c=v}catch(e){}
+  s(c); b.onclick=()=>{c=o[(o.indexOf(c)+1)%o.length];s(c)};
+</script>
+</body>
+</html>
