@@ -385,14 +385,18 @@
           </thead>
           <tbody>
             <tr><td>GPT-5.5 <span class="pill w">both roles</span></td><td class="num">73–85% band</td><td class="num">100%</td><td class="num">$10,565</td></tr>
-            <tr><td>Grok 4.5 <span class="pill w">both roles</span></td><td class="num">80%</td><td class="num">100%</td><td class="num">—</td></tr>
-            <tr><td>Fable 5 → Composer 2.5 <span class="pill g">hybrid</span></td><td class="num">73–85% band</td><td class="num">100%</td><td class="num">$2,090</td></tr>
+            <tr><td>Grok 4.5 <span class="pill w">both roles</span></td><td class="num">80%</td><td class="num">100%</td><td class="num">$1,928</td></tr>
+            <tr><td>Fable 5 → Composer 2.5 <span class="pill g">hybrid</span></td><td class="num">73–85% band</td><td class="num">100%</td><td class="num">$2,234</td></tr>
             <tr class="win"><td>Opus 4.8 → Composer 2.5 <span class="pill g">hybrid</span></td><td class="num">73–85% band</td><td class="num">100%</td><td class="num">$1,339</td></tr>
           </tbody>
         </table>
       </div>
       <p class="cap">The article reports the 4-hr scores as a band (73–85%) across the new runs rather than
-        per-config, so only Grok’s 80% is individually attributable. Highlighted row = cheapest full pass.</p>
+        per-config, so only Grok’s 80% is individually attributable. Costs are per-config totals
+        (planner + worker) read from the article’s “Cost to rebuild SQLite by model mix” chart; the same
+        chart also shows two <em>informal calibration</em> runs excluded here — a single-model Opus 4.8 at
+        $5,153 and Fable 5 at $20,057 — which underline how much cheaper the hybrids are. Highlighted row =
+        cheapest full pass.</p>
 
       <p style="margin-top:22px">This is the result worth sitting with: <strong>every configuration on the new
         harness eventually passed 100% of the suite</strong>. The models did not separate on whether they
