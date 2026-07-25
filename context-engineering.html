@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The new rules of context engineering — a read</title>
+<style>
+  :root{
+    --bg:#f6f3ec; --panel:#fdfcf9; --panel-2:#efebe1;
+    --ink:#1c1a16; --ink-2:#5b564c; --ink-3:#8c8578;
+    --line:#e0dbcf; --line-2:#eae6db;
+    /* then / now — text-safe variants (darker, for words) */
+    --then:#a84613; --now:#0b7a56;
+    /* then / now — chart fills (validated: dataviz palette slots 2 & 3) */
+    --then-fill:#eb6834; --now-fill:#1baf7a;
+    --then-soft:rgba(235,104,52,.12); --now-soft:rgba(27,175,122,.12);
+    --hero:#1c1a16;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --shadow:0 1px 0 rgba(0,0,0,.02), 0 20px 50px -34px rgba(35,30,20,.45);
+  }
+  @media (prefers-color-scheme:dark){
+    :root[data-theme="auto"]{
+      --bg:#141310; --panel:#1c1b17; --panel-2:#24221d;
+      --ink:#ece8de; --ink-2:#aaa495; --ink-3:#746e60;
+      --line:#2e2c25; --line-2:#242219;
+      --then:#f08a5a; --now:#3ecb9b;
+      --then-fill:#d95926; --now-fill:#199e70;
+      --then-soft:rgba(217,89,38,.16); --now-soft:rgba(25,158,112,.16);
+      --hero:#ece8de;
+      --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141310; --panel:#1c1b17; --panel-2:#24221d;
+    --ink:#ece8de; --ink-2:#aaa495; --ink-3:#746e60;
+    --line:#2e2c25; --line-2:#242219;
+    --then:#f08a5a; --now:#3ecb9b;
+    --then-fill:#d95926; --now-fill:#199e70;
+    --then-soft:rgba(217,89,38,.16); --now-soft:rgba(25,158,112,.16);
+    --hero:#ece8de;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--serif);line-height:1.65;font-size:17px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:780px;margin:0 auto;padding:0 22px}
+  .toggle{position:fixed;top:14px;right:14px;z-index:20;font-family:var(--mono);font-size:11px;letter-spacing:.05em;background:var(--panel);color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;box-shadow:var(--shadow)}
+  .toggle:hover{color:var(--ink);border-color:var(--ink-3)}
+  a{color:inherit}
+
+  /* header */
+  header{padding:76px 0 30px}
+  .kick{font-family:var(--mono);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin:0 0 20px;display:flex;align-items:center;gap:10px}
+  .kick::before{content:"";width:26px;height:1px;background:var(--ink-3)}
+  h1{font-size:clamp(2.1rem,6.4vw,3.3rem);font-weight:700;letter-spacing:-.02em;line-height:1.06;margin:0 0 16px}
+  h1 .strike{text-decoration:line-through;text-decoration-color:var(--then);text-decoration-thickness:3px;color:var(--ink-3)}
+  .dek{color:var(--ink-2);font-size:1.12rem;max-width:60ch;margin:0 0 26px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0}
+  .meta b{color:var(--ink-2);font-weight:500}
+
+  /* tl;dr */
+  .tldr{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--now-fill);border-radius:14px;padding:22px 26px;margin:34px 0 8px;box-shadow:var(--shadow)}
+  .tldr .tag{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--now);margin:0 0 10px}
+  .tldr ol{margin:0;padding-left:1.2em}
+  .tldr li{margin:7px 0;font-size:.98rem}
+  .tldr li::marker{font-family:var(--mono);color:var(--ink-3);font-size:.85em}
+
+  /* sections */
+  section{padding:34px 0 6px}
+  h2{font-size:1.62rem;font-weight:700;letter-spacing:-.015em;line-height:1.2;margin:18px 0 14px}
+  h2 .n{font-family:var(--mono);font-size:.62em;font-weight:400;color:var(--ink-3);letter-spacing:.1em;display:block;margin-bottom:6px}
+  h3{font-size:1.12rem;font-weight:700;margin:26px 0 8px}
+  p{margin:0 0 14px;max-width:66ch}
+  .small{font-size:.9rem;color:var(--ink-2)}
+  code{font-family:var(--mono);font-size:.83em;background:var(--panel-2);border:1px solid var(--line-2);border-radius:5px;padding:1px 5px}
+
+  /* pull quote */
+  .pull{border-left:3px solid var(--line);padding:4px 0 4px 20px;margin:22px 0;font-size:1.18rem;line-height:1.5;color:var(--ink);font-style:italic;max-width:62ch}
+  .pull .who{display:block;font-style:normal;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink-3);margin-top:10px}
+
+  /* quote block (verbatim, mono) */
+  .vq{font-family:var(--mono);font-size:.82rem;line-height:1.7;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:14px 18px;margin:14px 0;color:var(--ink-2);white-space:pre-wrap}
+  .vq .lbl{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px}
+  .vq.then-q .lbl{color:var(--then)} .vq.now-q .lbl{color:var(--now)}
+  .vq.then-q{border-left:3px solid var(--then-fill)}
+  .vq.now-q{border-left:3px solid var(--now-fill)}
+
+  /* figure shell */
+  figure{margin:26px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 22px 16px;box-shadow:var(--shadow)}
+  figcaption{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);line-height:1.6;margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+  figure svg{width:100%;height:auto;display:block}
+  .svg-t{font-family:var(--mono);font-size:11px;fill:var(--ink-2)}
+  .svg-t.dim{fill:var(--ink-3)}
+  .svg-t.strong{fill:var(--ink);font-weight:600}
+
+  /* hero stat */
+  .stat-row{display:flex;gap:16px;flex-wrap:wrap;margin:24px 0}
+  .stat{flex:1 1 200px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+  .stat .v{font-size:2.3rem;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+  .stat .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-top:6px;line-height:1.6}
+
+  /* clash chips */
+  .clash{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}
+  .clash .chip{font-family:var(--mono);font-size:.8rem;border-radius:10px;padding:10px 14px;border:1px solid var(--line)}
+  .clash .c1{background:var(--then-soft);border-color:var(--then-fill);color:var(--ink)}
+  .clash .c2{background:var(--now-soft);border-color:var(--now-fill);color:var(--ink)}
+  .clash .vs{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.15em}
+
+  /* shift cards */
+  .shift{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:20px 0;box-shadow:var(--shadow)}
+  .shift .head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .shift .num{font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.12em}
+  .shift .tn{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 14px}
+  .shift .tn .t{font-weight:700;font-size:1.06rem;text-decoration:line-through;text-decoration-color:var(--then-fill);text-decoration-thickness:2px;color:var(--ink-2)}
+  .shift .tn .arrow{color:var(--ink-3);font-size:1rem}
+  .shift .tn .w{font-weight:700;font-size:1.06rem;color:var(--now)}
+  .shift p{font-size:.97rem}
+
+  /* callout / caveat */
+  .callout{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin:24px 0}
+  .callout .tag{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 8px;color:var(--then)}
+  .callout p{font-size:.94rem;margin-bottom:8px}
+  .callout p:last-child{margin-bottom:0}
+
+  /* stack advice */
+  .layer{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:16px 0;border-top:1px solid var(--line-2)}
+  .layer:last-of-type{border-bottom:1px solid var(--line-2)}
+  .layer .name{font-family:var(--mono);font-size:.8rem;color:var(--ink);font-weight:600;letter-spacing:.03em;padding-top:2px}
+  .layer p{font-size:.95rem;margin-bottom:8px}
+  .layer p:last-child{margin-bottom:0}
+  @media(max-width:560px){.layer{grid-template-columns:1fr;gap:6px}}
+
+  /* checklist */
+  .check{list-style:none;padding:0;margin:14px 0}
+  .check li{position:relative;padding:10px 0 10px 34px;border-top:1px solid var(--line-2);font-size:.97rem;max-width:70ch}
+  .check li:last-child{border-bottom:1px solid var(--line-2)}
+  .check li::before{content:"→";position:absolute;left:6px;top:9px;color:var(--now);font-family:var(--mono)}
+
+  /* glossary */
+  dl{margin:10px 0}
+  dt{font-family:var(--mono);font-size:.85rem;font-weight:600;margin-top:14px}
+  dd{margin:2px 0 0;color:var(--ink-2);font-size:.93rem;max-width:66ch}
+
+  footer{padding:40px 0 80px;color:var(--ink-3);font-size:.85rem;border-top:1px solid var(--line);margin-top:44px}
+  footer .m{font-family:var(--mono);font-size:11.5px;line-height:2}
+  footer a{color:var(--ink-2)}
+</style>
+</head>
+<body>
+<button class="toggle" id="t">◐ theme</button>
+<div class="wrap">
+
+<header>
+  <p class="kick">Article read · claude.com blog</p>
+  <h1>They <span class="strike">deleted most of</span> rewrote the prompt.</h1>
+  <p class="dek">Anthropic — the AI company behind the Claude models — says it removed over 80% of the standing
+     instructions inside Claude Code, its AI coding assistant, because its newest models no longer need them.
+     This is a read of the blog post explaining why, and what the new rules of "context engineering" are.</p>
+  <div class="meta">
+    <span><b>Source</b> claude.com/blog</span>
+    <span><b>Author</b> Thariq Shihipar, member of technical staff, Anthropic</span>
+    <span><b>Published</b> Jul 24, 2026</span>
+    <span><b>Read time</b> ~5 min original</span>
+  </div>
+</header>
+
+<div class="tldr">
+  <p class="tag">TL;DR</p>
+  <ol>
+    <li>Anthropic removed <strong>over 80%</strong> of Claude Code's system prompt for its newest models
+        (Claude Opus 5 and Claude Fable 5) with, in its words, "no measurable loss on our coding evaluations."</li>
+    <li>The reason: old prompts were full of strict rules written to protect against the worst-case behaviour of
+        <em>older</em> models. Newer models "have better judgement and can handle these decisions well without explicit rules."</li>
+    <li>Six former best practices are declared myths, each with a replacement: rules → judgement, examples →
+        interface design, everything-upfront → progressive disclosure, repetition → simple tool descriptions,
+        manual memory files → auto-memory, simple specs → rich references.</li>
+    <li>Practical upshot for anyone configuring an AI agent: make every instruction file <em>shorter</em>, keep only
+        codebase "gotchas," split long guidance into files loaded on demand, and prefer showing the model real code
+        over describing what you want in prose.</li>
+    <li>Caveat: this is a vendor writing about its own product, and the "80%" and "no measurable loss" figures come
+        from internal evaluations. Trust the shape of the argument more than any single number.</li>
+  </ol>
+</div>
+
+<section id="primer">
+  <h2><span class="n">§ 1</span>What this is about, from zero</h2>
+  <p><strong>Claude</strong> is a family of large language models — AI systems that read and write text — made by
+     <strong>Anthropic</strong>, one of the major AI labs. <strong>Claude Code</strong> is Anthropic's coding
+     assistant built on those models: a program that sits in a developer's terminal or editor, reads their codebase,
+     and writes and edits code on request. The newest generation of models, released in 2026, includes
+     <strong>Claude Opus 5</strong> and <strong>Claude Fable 5</strong> — the "Claude 5 generation" of the title.</p>
+  <p>When you type a request to an AI assistant, your message is not all the model sees. Behind the scenes, the
+     software wraps your message in a much larger bundle of standing text: instructions about how to behave, notes
+     about your project, descriptions of the tools it may use, memories from earlier sessions. The article's own
+     framing:</p>
+  <blockquote class="pull">"When you send a message to Claude, the prompt is only a small part of the context it gets.
+    Much of your context is assembled from your system prompt, Skills, CLAUDE.md files, memory, and other sources.
+    We call this context engineering."
+    <span class="who">— the article (claude.com blog, Jul 24, 2026)</span>
+  </blockquote>
+  <p><strong>Context engineering</strong>, then, is the craft of deciding what goes into that bundle. It is harder
+     than writing a one-off prompt because, as the article notes, "context is used generally across many requests,
+     so it cannot be as specific" — you are writing standing instructions without knowing what the user will ask.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 300" role="img" aria-label="Diagram: what the model actually reads is a bundle assembled from many sources; the user's typed prompt is only a thin slice of it.">
+      <!-- assembled context column -->
+      <rect x="270" y="20" width="180" height="250" rx="10" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="360" y="12" text-anchor="middle" class="svg-t strong">what the model actually reads</text>
+      <!-- slices -->
+      <rect x="282" y="32"  width="156" height="86" rx="5" fill="var(--then-soft)" stroke="var(--then-fill)"/>
+      <text x="360" y="70" text-anchor="middle" class="svg-t">system prompt</text>
+      <text x="360" y="86" text-anchor="middle" class="svg-t dim">(product instructions)</text>
+      <rect x="282" y="124" width="156" height="38" rx="5" fill="var(--panel)" stroke="var(--line)"/>
+      <text x="360" y="147" text-anchor="middle" class="svg-t">skills &amp; tool descriptions</text>
+      <rect x="282" y="168" width="156" height="34" rx="5" fill="var(--panel)" stroke="var(--line)"/>
+      <text x="360" y="189" text-anchor="middle" class="svg-t">CLAUDE.md (project notes)</text>
+      <rect x="282" y="208" width="156" height="28" rx="5" fill="var(--panel)" stroke="var(--line)"/>
+      <text x="360" y="226" text-anchor="middle" class="svg-t">memory · references</text>
+      <rect x="282" y="242" width="156" height="18" rx="5" fill="var(--now-soft)" stroke="var(--now-fill)"/>
+      <text x="360" y="255" text-anchor="middle" class="svg-t">your typed prompt</text>
+      <!-- left labels -->
+      <text x="20" y="66" class="svg-t dim">standing text, written</text>
+      <text x="20" y="82" class="svg-t dim">once, sent every time —</text>
+      <text x="20" y="98" class="svg-t dim">this is what "context</text>
+      <text x="20" y="114" class="svg-t dim">engineering" designs</text>
+      <line x1="180" y1="90" x2="266" y2="110" stroke="var(--ink-3)" stroke-width="1"/>
+      <text x="20" y="240" class="svg-t dim">the only part the</text>
+      <text x="20" y="256" class="svg-t dim">user writes</text>
+      <line x1="120" y1="250" x2="278" y2="251" stroke="var(--ink-3)" stroke-width="1"/>
+      <!-- arrow to model -->
+      <line x1="450" y1="145" x2="540" y2="145" stroke="var(--ink-3)" stroke-width="1.5"/>
+      <path d="M540 145 l-8 -4 v8 z" fill="var(--ink-3)"/>
+      <rect x="548" y="115" width="150" height="60" rx="10" fill="var(--panel)" stroke="var(--ink-3)"/>
+      <text x="623" y="140" text-anchor="middle" class="svg-t strong">Claude</text>
+      <text x="623" y="158" text-anchor="middle" class="svg-t dim">(the model)</text>
+    </svg>
+    <figcaption>Every request bundles standing instructions with the user's message. Slice sizes here are
+      illustrative, not measured — the point, per the article, is that the typed prompt is "only a small part."</figcaption>
+  </figure>
+</section>
+
+<section id="headline">
+  <h2><span class="n">§ 2</span>The headline: four-fifths of the prompt, gone</h2>
+  <p>The article's anchor claim, verbatim:</p>
+  <blockquote class="pull">"We removed over 80% of Claude Code's system prompt for models like Claude Opus 5 and
+    Claude Fable 5 with no measurable loss on our coding evaluations."
+    <span class="who">— the article</span>
+  </blockquote>
+
+  <div class="stat-row">
+    <div class="stat"><div class="v">&gt;80%</div><div class="k">of the system prompt removed<br>(Anthropic's own figure)</div></div>
+    <div class="stat"><div class="v">0</div><div class="k">"measurable loss" on internal coding evaluations (vendor claim)</div></div>
+    <div class="stat"><div class="v">6</div><div class="k">old best practices the post declares myths</div></div>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 720 240" role="img" aria-label="Illustration: a page of prompt text with roughly four in five lines struck through, representing the removed instructions.">
+      <rect x="60" y="14" width="600" height="212" rx="10" fill="var(--panel-2)" stroke="var(--line)"/>
+      <text x="80" y="38" class="svg-t dim">claude-code system prompt (illustrative)</text>
+      <!-- 15 lines: 12 struck (80%), 3 kept -->
+      <g>
+        <rect x="80"  y="52"  width="430" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="55.5" x2="510" y2="55.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="64"  width="520" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="67.5" x2="600" y2="67.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="76"  width="360" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="79.5" x2="440" y2="79.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="88"  width="490" height="7" rx="3.5" fill="var(--now-fill)"/>
+        <rect x="80"  y="100" width="470" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="103.5" x2="550" y2="103.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="112" width="540" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="115.5" x2="620" y2="115.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="124" width="400" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="127.5" x2="480" y2="127.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="136" width="510" height="7" rx="3.5" fill="var(--now-fill)"/>
+        <rect x="80"  y="148" width="450" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="151.5" x2="530" y2="151.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="160" width="560" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="163.5" x2="640" y2="163.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="172" width="380" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="175.5" x2="460" y2="175.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="184" width="500" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="187.5" x2="580" y2="187.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+        <rect x="80"  y="196" width="440" height="7" rx="3.5" fill="var(--now-fill)"/>
+        <rect x="80"  y="208" width="330" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/><line x1="80"  y1="211.5" x2="410" y2="211.5" stroke="var(--then-fill)" stroke-width="1.6"/>
+      </g>
+      <!-- legend -->
+      <rect x="530" y="30" width="10" height="7" rx="3.5" fill="var(--then-fill)" opacity=".38"/>
+      <text x="546" y="38" class="svg-t dim">removed</text>
+      <rect x="612" y="30" width="10" height="7" rx="3.5" fill="var(--now-fill)"/>
+      <text x="628" y="38" class="svg-t dim">kept</text>
+    </svg>
+    <figcaption>Illustration of the claim, not a rendering of the real prompt: for the newest models, more than
+      4 of every 5 lines of Claude Code's standing instructions were deleted (per Anthropic; "over 80%").</figcaption>
+  </figure>
+
+  <p>Why is that impressive? A system prompt is the product team's main lever over how the assistant behaves —
+     teams typically <em>grow</em> it over time, adding a rule for every incident. Deleting most of it and losing
+     nothing on evaluations (if the internal figures hold up) means the rules weren't doing the work anymore;
+     the model's own judgement was. Anthropic has folded these lessons into a diagnostic command,
+     <code>claude doctor</code> (run as <code>/doctor</code> inside Claude Code), which the post says will
+     "rightsize your skills, and CLAUDE.md files."</p>
+</section>
+
+<section id="why">
+  <h2><span class="n">§ 3</span>Why the rules stopped paying rent</h2>
+  <p>The post's diagnosis is that Claude Code was being <em>overconstrained</em> — by its own system prompt and by
+     users' configuration files alike. Reading transcripts of internal usage, the team found "several conflicting
+     messages in a single request" as different instruction sources clashed:</p>
+  <div class="clash">
+    <span class="chip c1">"leave documentation as appropriate"</span>
+    <span class="vs">CLASHES WITH</span>
+    <span class="chip c1">"DO NOT add comments"</span>
+  </div>
+  <p class="small">Both real examples from the article — one instruction arriving from a skill or user request, the
+     other from the system prompt. The model usually untangles the contradiction, but "must think more carefully
+     about these overlapping and conflicting messages before deciding what to do" — wasted effort on every request.</p>
+  <p>Two things changed. First, capability: the strict rules existed "to avoid worst case scenarios" (the post's
+     example: deleting files) in older models, and the team "found we can delete many of them and let the model use
+     surrounding context and judgement instead." Second, infrastructure: Claude Code once leaned on a single
+     project-notes file, <code>CLAUDE.md</code>, as "a source of memory, information, and guidance." It now has
+     dedicated features — "memory, artifacts, and skills, which Claude can use to create new ways of loading and
+     sharing context across sessions" — so the one big file no longer has to carry everything.</p>
+</section>
+
+<section id="shifts">
+  <h2><span class="n">§ 4</span>Six myths, six replacements</h2>
+  <p>The core of the article is a list of former best practices that "had become myths," each paired with what to do
+     instead. Struck-through = the old advice.</p>
+
+  <div class="shift">
+    <div class="head"><span class="num">SHIFT 1 / 6</span></div>
+    <div class="tn"><span class="t">Give Claude rules</span><span class="arrow">→</span><span class="w">Let Claude use judgement</span></div>
+    <p>Old prompts hard-coded behaviour to prevent worst cases, even where the rule was sometimes wrong. The
+       clearest before/after in the piece is about code comments — the actual system-prompt text:</p>
+    <div class="vq then-q"><span class="lbl">Then — old system prompt (verbatim)</span>In code: default to writing no comments. Never write multi-paragraph docstrings or multi-line comment blocks — one short line max. Don't create planning, decision, or analysis documents unless the user asks for them — work from conversation context, not intermediate files.</div>
+    <div class="vq now-q"><span class="lbl">Now — new system prompt (verbatim)</span>Write code that reads like the surrounding code: match its comment density, naming, and idiom.</div>
+    <p>The old rule failed users who wanted documentation, or code genuinely needing long comments. With older
+       models that trade-off was accepted because unguided comments "would be incorrect in many cases." Newer
+       models "have better judgement and can handle these decisions well without explicit rules."</p>
+  </div>
+
+  <div class="shift">
+    <div class="head"><span class="num">SHIFT 2 / 6</span></div>
+    <div class="tn"><span class="t">Give Claude examples</span><span class="arrow">→</span><span class="w">Design interfaces</span></div>
+    <p>"The number one rule for tool usage was to give Claude examples on how to use them." No longer: with the
+       newest models, "giving examples actually constrains them to a certain exploration space" — the model imitates
+       the sample instead of thinking. The replacement is to make the tool itself self-explanatory: "think more
+       about the design of your tools, scripts and files — what parameters does Claude have and how can they be more
+       expressive?" The post's example is a to-do-list tool where simply listing the allowed status values —
+       <code>pending</code>, <code>in_progress</code>, <code>completed</code> — "hints to Claude about how to use
+       it," and one line ("keep one item in_progress") defines the wanted behaviour with no worked examples at all.</p>
+  </div>
+
+  <div class="shift">
+    <div class="head"><span class="num">SHIFT 3 / 6</span></div>
+    <div class="tn"><span class="t">Put it all upfront</span><span class="arrow">→</span><span class="w">Use progressive disclosure</span></div>
+    <p><strong>Progressive disclosure</strong> = loading "the right context at the right times" instead of front-loading
+       everything. Detailed code-review and verification instructions moved out of the always-on system prompt into
+       <em>skills</em> — separate instruction files the assistant opens only when relevant. Tools get the same
+       treatment: some are "deferred loading," meaning "the agent must search for their full definitions using
+       ToolSearch before using them," so rarely-used tools cost nothing until needed.</p>
+    <figure style="box-shadow:none;border-style:dashed;margin:16px 0">
+      <svg viewBox="0 0 720 200" role="img" aria-label="Diagram: one monolithic always-loaded file versus a small index file pointing to smaller files loaded only when needed.">
+        <!-- monolith -->
+        <rect x="40" y="40" width="150" height="130" rx="8" fill="var(--then-soft)" stroke="var(--then-fill)"/>
+        <text x="115" y="30" text-anchor="middle" class="svg-t strong">then: monolith</text>
+        <text x="115" y="70" text-anchor="middle" class="svg-t">one huge file,</text>
+        <text x="115" y="88" text-anchor="middle" class="svg-t">every practice,</text>
+        <text x="115" y="106" text-anchor="middle" class="svg-t">always loaded,</text>
+        <text x="115" y="124" text-anchor="middle" class="svg-t">every request</text>
+        <!-- arrow -->
+        <line x1="215" y1="105" x2="285" y2="105" stroke="var(--ink-3)" stroke-width="1.5"/>
+        <path d="M285 105 l-8 -4 v8 z" fill="var(--ink-3)"/>
+        <!-- tree -->
+        <text x="480" y="30" text-anchor="middle" class="svg-t strong">now: a tree, loaded on demand</text>
+        <rect x="310" y="80" width="130" height="50" rx="8" fill="var(--now-soft)" stroke="var(--now-fill)"/>
+        <text x="375" y="101" text-anchor="middle" class="svg-t">small index</text>
+        <text x="375" y="117" text-anchor="middle" class="svg-t dim">(always loaded)</text>
+        <g stroke="var(--ink-3)" stroke-width="1">
+          <line x1="440" y1="105" x2="520" y2="58"/><line x1="440" y1="105" x2="520" y2="105"/><line x1="440" y1="105" x2="520" y2="152"/>
+        </g>
+        <rect x="524" y="44"  width="156" height="30" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="602" y="63" text-anchor="middle" class="svg-t">verification skill</text>
+        <rect x="524" y="91"  width="156" height="30" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="602" y="110" text-anchor="middle" class="svg-t">code-review skill</text>
+        <rect x="524" y="138" width="156" height="30" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="602" y="157" text-anchor="middle" class="svg-t">deferred tools</text>
+        <text x="602" y="188" text-anchor="middle" class="svg-t dim">opened only when relevant</text>
+      </svg>
+      <figcaption>The article's counter to a "common myth": don't make CLAUDE.md "a central repository for every
+        known practice… Instead, consider having a tree of files that can be loaded at the right time."</figcaption>
+    </figure>
+  </div>
+
+  <div class="shift">
+    <div class="head"><span class="num">SHIFT 4 / 6</span></div>
+    <div class="tn"><span class="t">Repeat yourself</span><span class="arrow">→</span><span class="w">Simple tool descriptions</span></div>
+    <p>"Earlier Claude models could sometimes need repeated instructions or be more likely to listen to instructions
+       at the end of their context window than at the start" — so the same guidance was written twice, once in the
+       system prompt and again in the tool's own description. For the new models, "we could delete these repeat
+       examples and put instructions on how to use tools in the tool descriptions rather than the system prompt."
+       One home per instruction.</p>
+  </div>
+
+  <div class="shift">
+    <div class="head"><span class="num">SHIFT 5 / 6</span></div>
+    <div class="tn"><span class="t">Memory in CLAUDE.md files</span><span class="arrow">→</span><span class="w">Auto-memory</span></div>
+    <p>Users used to curate the assistant's memory by hand — "using the # hotkey to write to their CLAUDE.md
+       automatically." Now: "Claude now automatically saves memories that are relevant to the work and to you."
+       Memory becomes something the model maintains, not something the user files.</p>
+  </div>
+
+  <div class="shift">
+    <div class="head"><span class="num">SHIFT 6 / 6</span></div>
+    <div class="tn"><span class="t">Simple specs</span><span class="arrow">→</span><span class="w">Rich references</span></div>
+    <p>Plans and specifications used to live in plain markdown files the assistant re-read as it worked. The claim:
+       "Claude can handle increasingly more complicated references." Three richer forms are named:
+       <strong>HTML artifacts</strong> (interactive documents the assistant itself produces) instead of markdown
+       plans; <strong>code as spec</strong> — "a spec may also be a detailed test suite, or a function in a
+       different codebase that Claude might port"; and <strong>rubrics</strong>, scoring guides that "allow Claude
+       to try and verify your taste in a particular field (e.g. what does a good API design look like) by using
+       dynamic workflows and spinning up verifier agents with those rubrics."</p>
+  </div>
+</section>
+
+<section id="apply">
+  <h2><span class="n">§ 5</span>The advice, layer by layer</h2>
+  <p>The post closes with per-layer guidance for assembling your own context — whether you're configuring Claude
+     Code or building an agent from scratch.</p>
+
+  <div class="layer">
+    <div class="name">System prompt</div>
+    <div><p>"Heavily tied to the product context" — it tells the model what product it's in and what it's doing.
+      Claude Code users "will likely never modify this"; but "if you are building your own agent harness, this is
+      where you should spend a lot of time."</p></div>
+  </div>
+  <div class="layer">
+    <div class="name">CLAUDE.md</div>
+    <div><p>"Keep your CLAUDE.md lightweight and briefly describe what your repo is for, but spend most of the
+      tokens on gotchas inside of the codebase" — e.g. a convention like keeping all types in one monolithic file.
+      "Avoid stating 'the obvious' things Claude should know by looking at your file system or your repo," and
+      push long procedures (like verification steps) out into a skill referenced from the file.</p></div>
+  </div>
+  <div class="layer">
+    <div class="name">Skills</div>
+    <div><p>"Lightweight guides to let Claude find information when needed. Avoid making them overconstrained,
+      except in highly important areas." Split long skills into many files (progressive disclosure again). Best
+      used to "encode particular opinions, knowledge, or best practices that are particular to you, your team, or
+      product."</p></div>
+  </div>
+  <div class="layer">
+    <div class="name">References</div>
+    <div><p>Files you @-mention into the conversation — specs, mockups, "or even entire codebases." Prefer
+      code-shaped references: "a HTML mockup of a design will generally produce better results than a description
+      of the design or a screenshot," because code is "a language it knows very well."</p></div>
+  </div>
+
+  <h3>If you configure any AI agent, the to-do list is:</h3>
+  <ul class="check">
+    <li>Audit your standing instructions for rules that exist to prevent a failure mode the current model no longer
+        has — delete them and state the goal instead.</li>
+    <li>Hunt for contradictions between your instruction sources (system prompt vs. project file vs. skills) —
+        every clash costs the model effort on every request.</li>
+    <li>Replace worked examples in tool definitions with better-designed parameters (expressive names, enumerated
+        values, one behavioural constraint).</li>
+    <li>Break monolithic instruction files into a small always-loaded core plus on-demand files.</li>
+    <li>Say each instruction once, in the place it belongs — tool guidance in the tool description, not the system
+        prompt.</li>
+    <li>Hand the model real code (tests, mockups, a reference implementation) instead of prose describing what you
+        want.</li>
+    <li>In Claude Code specifically: run <code>/doctor</code> to get this audit done automatically.</li>
+  </ul>
+</section>
+
+<div class="callout">
+  <p class="tag">Read with care — vendor source</p>
+  <p>This is Anthropic writing about Anthropic's product and Anthropic's models, published on its own blog. The two
+     load-bearing numbers — "over 80%" of the prompt removed, and "no measurable loss" — come from internal,
+     unpublished evaluations; neither the old and new prompts' sizes nor the evaluation suite is disclosed, and
+     "no <em>measurable</em> loss" is doing quiet work (it bounds what their tests detect, not what changed).
+     The post also promotes new product features (auto-memory, artifacts, <code>/doctor</code>). The direction of
+     the argument — newer models need fewer guardrails, and over-instruction now has a real cost — is consistent
+     with the trend across the industry, and is the useful takeaway. Trust the shape, not the point estimates.</p>
+</div>
+
+<section id="glossary">
+  <h2><span class="n">§ 6</span>Glossary</h2>
+  <dl>
+    <dt>large language model (LLM)</dt>
+    <dd>An AI system trained on huge amounts of text to read and generate language; Claude is one.</dd>
+    <dt>prompt</dt>
+    <dd>The message a user types to the model for one specific request.</dd>
+    <dt>context / context window</dt>
+    <dd>Everything the model reads when producing an answer — the prompt plus all standing instructions and files.
+        The context window is the maximum amount of text (measured in tokens, roughly word-fragments) it can read at once.</dd>
+    <dt>context engineering</dt>
+    <dd>Designing the standing part of the context: which instructions, files, and tool descriptions get bundled
+        with every request, and when.</dd>
+    <dt>system prompt</dt>
+    <dd>The product's built-in standing instructions — invisible to the user, sent with every request, defining how
+        the assistant behaves.</dd>
+    <dt>Claude Code</dt>
+    <dd>Anthropic's AI coding assistant; runs in the terminal, editors, and the web, and can read and edit real codebases.</dd>
+    <dt>CLAUDE.md</dt>
+    <dd>A plain-text notes file in a user's project that Claude Code reads automatically — project conventions,
+        warnings, preferences.</dd>
+    <dt>skill</dt>
+    <dd>A packaged instruction file for one kind of task (e.g. "how we do code review") that the assistant loads
+        only when that task comes up.</dd>
+    <dt>tool / tool description</dt>
+    <dd>An action the assistant can take (run a command, edit a file), defined with a short text description telling
+        the model when and how to use it.</dd>
+    <dt>deferred loading / ToolSearch</dt>
+    <dd>Keeping a tool's full definition out of the context until the assistant searches for it — so many tools can
+        exist without all of them costing space on every request.</dd>
+    <dt>progressive disclosure</dt>
+    <dd>The design principle of revealing information only when it becomes relevant, rather than all upfront.</dd>
+    <dt>auto-memory</dt>
+    <dd>Claude Code's newer feature where the assistant saves relevant facts across sessions by itself, replacing
+        hand-curated memory notes.</dd>
+    <dt>artifact</dt>
+    <dd>A self-contained document (often interactive HTML) the assistant produces and can later re-open as a reference.</dd>
+    <dt>spec</dt>
+    <dd>A specification — a written description of what software should do; the post argues a test suite or example
+        code often beats a prose spec.</dd>
+    <dt>rubric</dt>
+    <dd>A scoring guide describing what "good" looks like in some domain, which the assistant can hand to checker
+        ("verifier") agents to judge work against your taste.</dd>
+    <dt>agent / agent harness</dt>
+    <dd>An AI system that works toward a goal by taking actions (using tools) over multiple steps; the harness is
+        the surrounding software that feeds it context and executes its actions.</dd>
+    <dt>evaluation (eval)</dt>
+    <dd>A standardised test suite for measuring a model or product's performance; "no measurable loss on our coding
+        evaluations" means Anthropic's internal test scores didn't drop.</dd>
+  </dl>
+</section>
+
+<footer>
+  <p class="m">
+    Source: <a href="https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models">The
+    new rules of context engineering for Claude 5 generation models</a> — Thariq Shihipar, claude.com blog, Jul 24 2026.<br>
+    All quoted text verbatim from the article; slice sizes and line counts in diagrams are illustrative.<br>
+    Compiled 2026-07-25 · research workspace · reads in light &amp; dark.
+  </p>
+</footer>
+
+</div>
+<script>
+  const b=document.getElementById('t'),r=document.documentElement;
+  const o=['auto','light','dark'],l={auto:'◐ auto',light:'☀ light',dark:'☾ dark'};
+  function s(t){r.setAttribute('data-theme',t);b.textContent=l[t];try{localStorage.setItem('ce-theme',t)}catch(e){}}
+  let c='auto';try{const v=localStorage.getItem('ce-theme');if(v&&o.includes(v))c=v}catch(e){}
+  s(c); b.onclick=()=>{c=o[(o.indexOf(c)+1)%o.length];s(c)};
+</script>
+</body>
+</html>

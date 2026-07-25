@@ -13,6 +13,7 @@
     --a2:#0e7c66;  /* reconciliation */
     --a3:#5b53d6;  /* agent-swarms */
     --a4:#1f6f9c;  /* evaluating-ai-agents */
+    --a5:#a53a86;  /* context-engineering */
     --accent:#16181a;
     --mono:"SFMono-Regular",ui-monospace,"Menlo","Consolas",monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
@@ -23,7 +24,7 @@
       --bg:#0e0f11; --panel:#16181b; --panel-2:#1d2024;
       --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
       --line:#262a2f; --line-2:#1e2226;
-      --a1:#e8834a; --a2:#3fbfa1; --a3:#9a92f7; --a4:#57b6e0; --accent:#eceef0;
+      --a1:#e8834a; --a2:#3fbfa1; --a3:#9a92f7; --a4:#57b6e0; --a5:#d980bd; --accent:#eceef0;
       --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
     }
   }
@@ -31,7 +32,7 @@
     --bg:#0e0f11; --panel:#16181b; --panel-2:#1d2024;
     --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
     --line:#262a2f; --line-2:#1e2226;
-    --a1:#e8834a; --a2:#3fbfa1; --a3:#9a92f7; --a4:#57b6e0; --accent:#eceef0;
+    --a1:#e8834a; --a2:#3fbfa1; --a3:#9a92f7; --a4:#57b6e0; --a5:#d980bd; --accent:#eceef0;
     --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
   }
   *{box-sizing:border-box}
@@ -84,6 +85,23 @@
   </header>
 
   <main>
+    <a class="card" style="--c:var(--a5)" href="context-engineering.html">
+      <span class="go">→</span>
+      <div class="slug"><span class="dot"></span> context-engineering · 2026-07-25</div>
+      <h2>They deleted most of the prompt</h2>
+      <p>A read of Anthropic's "The new rules of context engineering for Claude 5 generation models":
+         why over 80% of Claude Code's system prompt got removed with no measurable eval loss, the six
+         old best practices now declared myths and their replacements, and layer-by-layer advice for
+         anyone configuring an AI agent. Written for a total newcomer, with a vendor-source caveat.</p>
+      <div class="foot">
+        <span class="chip">article read</span>
+        <span class="chip">context engineering</span>
+        <span class="chip">claude code</span>
+        <span class="chip">6 then→now shifts</span>
+        <span class="chip">diagrams + glossary</span>
+      </div>
+    </a>
+
     <a class="card" style="--c:var(--a4)" href="evaluating-ai-agents.html">
       <span class="go">→</span>
       <div class="slug"><span class="dot"></span> evaluating-ai-agents · 2026-07-22</div>
@@ -150,7 +168,7 @@
   </main>
 
   <footer>
-    <p class="meta">Built with Claude Code · served via GitHub Pages<br>Last updated 2026-07-22</p>
+    <p class="meta">Built with Claude Code · served via GitHub Pages<br>Last updated 2026-07-25</p>
   </footer>
 
 </div>
