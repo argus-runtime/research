@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sandboxes for AI Agents — a read</title>
+<style>
+  :root{
+    --bg:#f6f7f8; --panel:#ffffff; --panel-2:#eceef0;
+    --ink:#141719; --ink-2:#4c565c; --ink-3:#828d94;
+    --line:#e0e4e7; --line-2:#eaedef;
+    --c:#0e7d9b;          /* sandboxes accent — cyan/teal */
+    --c-soft:#e5f3f7;
+    --good:#0e7c66; --warn:#b4531f; --bad:#b23246;
+    --accent:#141719;
+    --mono:"SFMono-Regular",ui-monospace,"Menlo","Consolas",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
+    --shadow:0 1px 0 rgba(0,0,0,.03), 0 18px 44px -30px rgba(20,25,30,.4);
+  }
+  @media (prefers-color-scheme:dark){
+    :root[data-theme="auto"]{
+      --bg:#0d0f10; --panel:#15181a; --panel-2:#1c2023;
+      --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
+      --line:#242a2e; --line-2:#1d2225;
+      --c:#4bb9d6; --c-soft:#0f2830; --good:#3fbfa1; --warn:#e8834a; --bad:#e0637a;
+      --accent:#eceef0;
+      --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d0f10; --panel:#15181a; --panel-2:#1c2023;
+    --ink:#eceef0; --ink-2:#a3abb2; --ink-3:#6d767d;
+    --line:#242a2e; --line-2:#1d2225;
+    --c:#4bb9d6; --c-soft:#0f2830; --good:#3fbfa1; --warn:#e8834a; --bad:#e0637a;
+    --accent:#eceef0;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px}
+  a{color:var(--c)}
+  .toggle{position:fixed;top:14px;right:14px;z-index:20;font-family:var(--mono);font-size:11px;letter-spacing:.05em;background:var(--panel);color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;box-shadow:var(--shadow)}
+  .toggle:hover{color:var(--ink);border-color:var(--ink-3)}
+
+  /* ---- header ---- */
+  header{padding:80px 0 34px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+  .kick{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--c);margin:0 0 18px;display:flex;align-items:center;gap:10px;position:relative}
+  .kick::before{content:"";width:26px;height:1px;background:var(--c)}
+  h1{font-size:clamp(2rem,6.2vw,3rem);font-weight:800;letter-spacing:-.03em;line-height:1.04;margin:0 0 16px;position:relative}
+  .dek{color:var(--ink-2);font-size:1.08rem;max-width:60ch;margin:0;position:relative}
+  .priv{margin-top:22px;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-3);border:1px dashed var(--line);border-radius:999px;padding:6px 13px}
+  .priv b{color:var(--warn);font-weight:600}
+
+  main{padding:10px 0 10px}
+  section{padding:38px 0;border-bottom:1px solid var(--line-2)}
+  .n{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--c);margin:0 0 10px}
+  h2{font-size:1.5rem;font-weight:750;letter-spacing:-.02em;line-height:1.15;margin:0 0 14px}
+  h3{font-size:1.05rem;font-weight:700;margin:26px 0 8px;letter-spacing:-.01em}
+  p{margin:0 0 15px;color:var(--ink)}
+  .lead{color:var(--ink-2)}
+  strong{font-weight:680}
+  em{font-style:italic}
+  .cap{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin:8px 2px 0;line-height:1.6}
+  code{font-family:var(--mono);font-size:.86em;background:var(--panel-2);border:1px solid var(--line-2);border-radius:5px;padding:1px 5px}
+
+  /* ---- tl;dr ---- */
+  .tldr{background:var(--c-soft);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:22px 24px;margin:34px 0 0}
+  .tldr .n{color:var(--c)}
+  .tldr p{margin:0 0 10px;font-size:1.02rem;color:var(--ink)}
+  .tldr p:last-child{margin:0}
+  .tldr b{color:var(--c)}
+
+  /* ---- callout ---- */
+  .call{border:1px solid var(--line);border-left:4px solid var(--warn);background:var(--panel);border-radius:10px;padding:16px 18px;margin:20px 0;box-shadow:var(--shadow)}
+  .call .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--warn);margin-bottom:6px}
+  .call p{margin:0;font-size:.96rem;color:var(--ink-2)}
+
+  /* ---- svg diagrams ---- */
+  .diagram{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 16px 10px;margin:22px 0 6px;box-shadow:var(--shadow)}
+  .diagram svg{display:block;width:100%;height:auto}
+  .diagram text{font-family:var(--mono);font-size:11px;letter-spacing:.02em}
+  .d-box{fill:var(--panel-2);stroke:var(--line);stroke-width:1.2}
+  .d-sand{fill:var(--c-soft);stroke:var(--c);stroke-width:1.6}
+  .d-danger{fill:none;stroke:var(--bad);stroke-width:1.4;stroke-dasharray:5 4}
+  .d-arrow{fill:none;stroke:var(--ink-3);stroke-width:1.5}
+  .d-arrow-c{fill:none;stroke:var(--c);stroke-width:1.6}
+  .t-ink{fill:var(--ink);font-weight:700}
+  .t-ink2{fill:var(--ink-2)}
+  .t-c{fill:var(--c);font-weight:700}
+  .t-bad{fill:var(--bad);font-weight:700}
+  .t-h{fill:var(--ink-3);letter-spacing:.1em}
+
+  /* ---- spectrum ---- */
+  .spectrum{display:grid;gap:10px;margin:20px 0 6px}
+  .rung{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}
+  .rung .who{font-family:var(--mono);font-size:11.5px;color:var(--ink);text-align:right;font-weight:600}
+  .rung .who small{display:block;color:var(--ink-3);font-weight:400;font-size:10px;letter-spacing:.02em}
+  .rung .bar{height:32px;border-radius:7px;display:flex;align-items:center;padding:0 13px;color:#fff;font-size:11px;font-family:var(--mono);letter-spacing:.02em;box-shadow:var(--shadow);white-space:nowrap;overflow:hidden}
+  .rung.r1 .bar{background:linear-gradient(90deg,#8a949b,#9aa4ab);width:40%}
+  .rung.r2 .bar{background:linear-gradient(90deg,#2f9fb8,#3fb0c9);width:62%}
+  .rung.r3 .bar{background:linear-gradient(90deg,#0e7d9b,#1793b4);width:82%}
+  .rung.r4 .bar{background:linear-gradient(90deg,#0b5f76,#0e7d9b);width:100%}
+  .axis{display:grid;grid-template-columns:150px 1fr;gap:14px;margin-top:4px}
+  .axis .lab{grid-column:2;display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--ink-3);letter-spacing:.04em}
+  @media(max-width:560px){ .rung,.axis{grid-template-columns:104px 1fr} .rung .who{font-size:10.5px} }
+
+  /* ---- use-case cards ---- */
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0 6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 17px;box-shadow:var(--shadow)}
+  .card .ic{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--c);margin-bottom:7px}
+  .card h4{margin:0 0 6px;font-size:1rem;font-weight:700;letter-spacing:-.01em}
+  .card p{margin:0;font-size:.9rem;color:var(--ink-2);line-height:1.55}
+  .card .eg{margin-top:9px;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);border-top:1px solid var(--line-2);padding-top:8px}
+  @media(max-width:560px){ .cards{grid-template-columns:1fr} }
+
+  /* ---- tables ---- */
+  .twrap{overflow-x:auto;margin:20px 0 6px;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;background:var(--panel);min-width:560px}
+  th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+  thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600;background:var(--panel-2)}
+  tbody tr:last-child td{border-bottom:none}
+  td b{font-weight:680}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;letter-spacing:.02em}
+  .tag.weak{background:rgba(178,50,70,.12);color:var(--bad)}
+  .tag.mid{background:rgba(180,83,31,.14);color:var(--warn)}
+  .tag.strong{background:rgba(14,124,102,.14);color:var(--good)}
+  .verb{border-bottom:1px dotted var(--c);cursor:help}
+
+  /* ---- risk list ---- */
+  .risks{display:grid;gap:10px;margin:20px 0 6px}
+  .risk{display:grid;grid-template-columns:22px 1fr;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow)}
+  .risk .no{font-family:var(--mono);font-size:11px;color:var(--warn);font-weight:700}
+  .risk b{display:block;margin-bottom:2px;font-size:.96rem}
+  .risk span{color:var(--ink-2);font-size:.9rem}
+
+  /* ---- glossary ---- */
+  .gloss{display:grid;gap:0;margin:18px 0 6px;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+  .gloss dt{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--c);background:var(--panel-2);padding:11px 15px 4px}
+  .gloss dd{margin:0;padding:2px 15px 12px;font-size:.9rem;color:var(--ink-2);background:var(--panel);border-bottom:1px solid var(--line-2)}
+  .gloss dd:last-child{border-bottom:none}
+
+  /* ---- sources ---- */
+  .src-list{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);line-height:1.9;list-style:none;padding:0;margin:8px 0 0}
+  .src-list a{color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
+  .src-list a:hover{color:var(--c)}
+  .src-list li{margin-bottom:8px}
+  footer{padding:40px 0 70px;color:var(--ink-3);font-family:var(--mono);font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+<button class="toggle" id="tg" aria-label="Toggle colour theme">◐ theme</button>
+
+<div class="wrap">
+<header>
+  <p class="kick">Private research · sandboxes</p>
+  <h1>The disposable room where an agent's code can run</h1>
+  <p class="dek">An AI agent writes code it has never been tested on, then wants to <em>run</em> it. A sandbox is the isolated, throwaway environment where that can happen without touching anything you care about. Here's what a sandbox is, what it's actually used for, and how one is wired into an agent.</p>
+  <span class="priv">🔒 <b>not published</b> — personal research, local only</span>
+</header>
+
+<main>
+
+<!-- TL;DR -->
+<div class="tldr">
+  <p class="n">TL;DR</p>
+  <p>A <b>sandbox</b> is an isolated, disposable environment for running untrusted code — here, the code an AI model generates on the fly. It exists because model output is <b>unpredictable</b>: models hallucinate packages, and a <span class="verb" title="An attacker hides instructions in data the model reads, hijacking its behaviour.">prompt injection</span> can turn an agent into an attacker's tool.</p>
+  <p>The core use cases: <b>code interpreters / data analysis</b>, <b>coding agents</b> that build and test software, <b>agent tool &amp; computer use</b>, running <b>untrusted code</b> at scale (incl. RL training), and <b>ephemeral dev environments</b>.</p>
+  <p>Under the hood it's a spectrum of isolation strength: <b>plain container → gVisor → Firecracker microVM → full VM</b>, trading stronger isolation against more startup cost. Firecracker boots a microVM in <b>as little as 125&nbsp;ms</b> with <b>under 5&nbsp;MiB</b> overhead.</p>
+</div>
+
+<!-- 1. THE PROBLEM -->
+<section>
+  <p class="n">01 · The problem</p>
+  <h2>Why not just run the code?</h2>
+  <p class="lead">A large language model (LLM) — the kind of AI behind tools like ChatGPT or Claude — can now do more than write text back to you. Give it the ability to <em>execute</em> code and it becomes an <strong>agent</strong>: it writes a script, runs it, reads the result, and decides what to do next, looping until a task is done.</p>
+  <p>That ability is exactly where the danger lives. The model is writing code no human reviewed, from a prompt that may itself be hostile, and then running it. If it runs on your actual machine, it runs with <em>your</em> permissions — your files, your saved passwords, your cloud credentials, your network.</p>
+  <p>Two failure modes drive the whole field:</p>
+  <div class="call">
+    <div class="lbl">Failure mode 1 — honest mistakes</div>
+    <p>Models are unpredictable and "routinely hallucinate entire packages." A generated script can delete the wrong directory, exhaust memory, or install a package that doesn't exist (or worse, one an attacker <em>registered</em> under the hallucinated name). No malice required — just a confident wrong guess.</p>
+  </div>
+  <div class="call" style="border-left-color:var(--bad)">
+    <div class="lbl" style="color:var(--bad)">Failure mode 2 — hijacking (prompt injection)</div>
+    <p>A <strong>prompt injection</strong> hides instructions inside data the agent reads — a web page, a file, an email — so the model follows the attacker instead of you. There is no reliable, deterministic way to prevent it. A sandbox can't stop the injection, but it <em>contains the blast radius</em>: a hijacked agent trapped in a sandbox can't reach your real secrets or systems.</p>
+  </div>
+  <p>So the goal isn't to make the code correct — it's to make running <em>wrong or hostile</em> code <strong>safe by construction</strong>. That is the job of a sandbox.</p>
+</section>
+
+<!-- 2. WHAT IT IS -->
+<section>
+  <p class="n">02 · Definition</p>
+  <h2>What a sandbox actually is</h2>
+  <p class="lead">A sandbox is "a dynamic environment that can ephemerally containerize code at runtime" — plainer: a walled-off, temporary computer-within-your-computer that the agent's code runs inside, and which you can throw away when it's done.</p>
+  <p>Three properties make it a sandbox rather than "just running the code somewhere":</p>
+  <p><strong>1. Isolation.</strong> Code inside cannot see or touch what's outside — not the host's files, not its other processes, and (by default) not the network — unless you explicitly hand it a door.</p>
+  <p><strong>2. Ephemerality.</strong> It's spun up for a task and destroyed after. Nothing the code did persists unless you deliberately save it, so a compromised or corrupted environment is discarded, not cleaned.</p>
+  <p><strong>3. Constrained resources.</strong> It gets a fixed budget — CPU, memory, disk, wall-clock time — so a runaway or malicious job hits a wall instead of taking down the host.</p>
+  <p>The interesting engineering question is <em>how strong</em> the wall is, and what it costs you in speed. That's a spectrum, not a single answer.</p>
+</section>
+
+<!-- 3. SPECTRUM -->
+<section>
+  <p class="n">03 · The isolation spectrum</p>
+  <h2>How strong a wall do you want?</h2>
+  <p class="lead">Every sandbox technology sits somewhere on a trade-off: the stronger the isolation, the more it costs to start and run. The key dividing line is whether the code <strong>shares the host's kernel</strong> — the core of the operating system. If it does, a single kernel bug can be an escape route. If it gets its <em>own</em> kernel, the host is far better protected.</p>
+
+  <div class="spectrum">
+    <div class="rung r1">
+      <div class="who">Plain container<small>Docker, namespaces</small></div>
+      <div class="bar">shares host kernel · fastest · weakest wall</div>
+    </div>
+    <div class="rung r2">
+      <div class="who">gVisor<small>user-space kernel</small></div>
+      <div class="bar">own "guest kernel" in software · no VM boot</div>
+    </div>
+    <div class="rung r3">
+      <div class="who">Firecracker<small>microVM</small></div>
+      <div class="bar">own kernel + hardware boundary (KVM) · ~125 ms boot</div>
+    </div>
+    <div class="rung r4">
+      <div class="who">Full VM<small>QEMU, cloud instance</small></div>
+      <div class="bar">complete machine · strongest · heaviest</div>
+    </div>
+    <div class="axis"><div class="lab"><span>← weaker isolation · lower cost</span><span>stronger isolation · higher cost →</span></div></div>
+  </div>
+  <p class="cap">Fig 1 — The isolation spectrum. Bar length ≈ relative isolation strength (illustrative, not measured). Only Firecracker's ~125 ms boot is an official figure; the rest is qualitative ordering. Details and the one hard datapoint are in the table in §06.</p>
+
+  <p style="margin-top:22px">A useful mental model: a <strong>container</strong> is a locked room in a shared house — walls, but everyone breathes the same air (the kernel). A <strong>microVM</strong> is a separate cabin with its own everything. <strong>gVisor</strong> is a clever middle option: it puts a software "kernel" in front of the real one so the code never talks to the host kernel directly.</p>
+</section>
+
+<!-- 4. USE CASES -->
+<section>
+  <p class="n">04 · The use cases</p>
+  <h2>What are they actually used for?</h2>
+  <p class="lead">"Run untrusted code safely" shows up in several concrete shapes. These are the ones that matter for AI agents today.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="ic">01 · analysis</div>
+      <h4>Code interpreter &amp; data analysis</h4>
+      <p>The agent writes and runs code to answer a question — parse a spreadsheet, plot a chart, crunch numbers — and reads the result back. The "run Python for me" feature behind many chat assistants.</p>
+      <div class="eg">e.g. ChatGPT / Claude analysis tools, Jupyter-style agents</div>
+    </div>
+    <div class="card">
+      <div class="ic">02 · building</div>
+      <h4>Coding agents</h4>
+      <p>An agent edits a real codebase, then compiles, runs the test suite, and iterates on failures — all inside a sandbox so a bad build or a rogue script can't touch the developer's machine.</p>
+      <div class="eg">e.g. background coding agents, automated PR fixers, CI-style checks</div>
+    </div>
+    <div class="card">
+      <div class="ic">03 · acting</div>
+      <h4>Agent tool &amp; computer use</h4>
+      <p>The agent operates a whole environment — a shell, a browser, a virtual desktop — to do a task end to end. The sandbox <em>is</em> the computer it drives, kept separate from yours.</p>
+      <div class="eg">e.g. "computer use" agents, browser automation, virtual-desktop agents</div>
+    </div>
+    <div class="card">
+      <div class="ic">04 · scale</div>
+      <h4>Untrusted code at scale (incl. RL)</h4>
+      <p>Run huge volumes of model-generated code and score it — to validate outputs, or to generate reward signals that <em>train</em> the next model. Needs thousands of disposable, parallel sandboxes.</p>
+      <div class="eg">e.g. reinforcement-learning environments, eval harnesses, AI-app hosting</div>
+    </div>
+    <div class="card" style="grid-column:1/-1">
+      <div class="ic">05 · environments</div>
+      <h4>Ephemeral developer environments</h4>
+      <p>A fresh, ready-to-code machine conjured per task or per branch and torn down after — the same isolation tech, aimed at giving each agent (or human) a clean, throwaway workspace instead of a shared, drifting one.</p>
+      <div class="eg">e.g. per-task dev sandboxes, preview environments, remote code interpreters</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. AGENT LOOP -->
+<section>
+  <p class="n">05 · How it's wired in</p>
+  <h2>The sandbox in the agent loop</h2>
+  <p class="lead">A sandbox isn't a one-shot filter — it's a station the agent visits repeatedly. The model proposes code, the sandbox runs it, the results (including errors) come back, and the model adjusts. The wall sits between that loop and everything real.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 640 300" role="img" aria-label="Diagram: an agent generates code, a sandbox executes it and returns results, while a dashed wall separates the sandbox from the real host system.">
+      <!-- Agent (LLM) -->
+      <rect class="d-box" x="24" y="118" width="150" height="66" rx="10"/>
+      <text class="t-ink" x="99" y="146" text-anchor="middle">LLM agent</text>
+      <text class="t-ink2" x="99" y="164" text-anchor="middle" font-size="10">plans · writes code</text>
+
+      <!-- Sandbox container -->
+      <rect class="d-sand" x="250" y="70" width="230" height="162" rx="14"/>
+      <text class="t-c" x="365" y="94" text-anchor="middle" font-size="10.5" letter-spacing="0.14em">SANDBOX (disposable)</text>
+      <rect class="d-box" x="278" y="112" width="174" height="50" rx="9"/>
+      <text class="t-ink" x="365" y="133" text-anchor="middle">execute code</text>
+      <text class="t-ink2" x="365" y="150" text-anchor="middle" font-size="10">own kernel · CPU/mem cap</text>
+      <rect class="d-box" x="278" y="172" width="174" height="42" rx="9"/>
+      <text class="t-ink2" x="365" y="197" text-anchor="middle" font-size="10">stdout · stderr · files</text>
+
+      <!-- arrows agent -> sandbox -->
+      <path class="d-arrow-c" d="M174 140 H244" marker-end="url(#ah-c)"/>
+      <text class="t-c" x="209" y="132" text-anchor="middle" font-size="9.5">code</text>
+      <!-- arrow sandbox -> agent (results), curved under -->
+      <path class="d-arrow" d="M278 193 C 210 250, 150 240, 120 196" marker-end="url(#ah)"/>
+      <text class="t-ink2" x="176" y="256" text-anchor="middle" font-size="9.5">results / errors</text>
+      <text class="t-h" x="99" y="206" text-anchor="middle" font-size="9">↻ loop until done</text>
+
+      <!-- Danger zone: real system -->
+      <rect class="d-danger" x="516" y="70" width="104" height="162" rx="12"/>
+      <text class="t-bad" x="568" y="60" text-anchor="middle" font-size="10">YOUR REAL SYSTEM</text>
+      <text class="t-ink2" x="568" y="120" text-anchor="middle" font-size="10">secrets</text>
+      <text class="t-ink2" x="568" y="150" text-anchor="middle" font-size="10">host files</text>
+      <text class="t-ink2" x="568" y="180" text-anchor="middle" font-size="10">network</text>
+      <!-- blocked arrow -->
+      <path class="d-arrow" d="M480 151 H512" stroke="var(--bad)" stroke-dasharray="4 3"/>
+      <line x1="496" y1="140" x2="496" y2="162" stroke="var(--bad)" stroke-width="2"/>
+      <line x1="490" y1="146" x2="502" y2="156" stroke="var(--bad)" stroke-width="2"/>
+      <line x1="502" y1="146" x2="490" y2="156" stroke="var(--bad)" stroke-width="2"/>
+      <text class="t-bad" x="496" y="182" text-anchor="middle" font-size="9">blocked</text>
+
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L8,3.2 L0,6.4 z" fill="var(--ink-3)"/></marker>
+        <marker id="ah-c" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L8,3.2 L0,6.4 z" fill="var(--c)"/></marker>
+      </defs>
+    </svg>
+  </div>
+  <p class="cap">Fig 2 — The agent proposes code; the sandbox runs it with its own kernel and resource caps and returns stdout/stderr/files; the model loops on the feedback. A hijacked or buggy run is trapped: the path to real secrets, host files, and the network is closed by default.</p>
+
+  <p style="margin-top:20px">Two practical notes. First, the sandbox usually <strong>persists across the loop</strong> — the same session stays warm so the agent can build state (install a library once, keep files between steps) instead of paying startup cost every turn. Second, the door to the outside is opened <em>deliberately</em>: you grant a specific network allow-list or mount a specific folder, rather than starting open and locking down.</p>
+</section>
+
+<!-- 6. HOW BUILT -->
+<section>
+  <p class="n">06 · Under the hood</p>
+  <h2>How the wall is built</h2>
+  <p class="lead">Four families, weakest to strongest. The honest summary: containers are fast but share the host kernel; microVMs give each job its own kernel behind a hardware boundary; gVisor is a software middle path; a full VM is the heavy, maximal option.</p>
+
+  <div class="twrap">
+  <table>
+    <thead>
+      <tr><th>Approach</th><th>How it isolates</th><th>Own kernel?</th><th>Startup</th><th>Isolation</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Plain container</b><br><small>Docker / OCI</small></td>
+        <td>Linux <span class="verb" title="Kernel features that give a process its own private view of the filesystem, processes, network, etc.">namespaces</span> + <span class="verb" title="cgroups cap how much CPU/memory a process can use.">cgroups</span> + <span class="verb" title="seccomp restricts which system calls a process may make.">seccomp</span> filters</td>
+        <td>No — shared</td>
+        <td>Fast <small>(sub-second)</small></td>
+        <td><span class="tag weak">weakest</span></td>
+      </tr>
+      <tr>
+        <td><b>gVisor</b><br><small>runsc runtime</small></td>
+        <td>A user-space "application kernel" (the <b>Sentry</b>) intercepts syscalls and acts as the guest kernel; it "does not pass system calls through to the host kernel." A <b>Gofer</b> mediates file access over the 9P protocol.</td>
+        <td>Yes <small>(in software)</small></td>
+        <td>Low <small>(no VM boot)</small></td>
+        <td><span class="tag mid">medium</span></td>
+      </tr>
+      <tr>
+        <td><b>Firecracker</b><br><small>microVM</small></td>
+        <td>A minimal hardware-virtualized <b>microVM</b> via KVM, each with its own guest kernel; a <b>jailer</b> adds Linux user-space barriers and a "minimal device model … reduces the attack surface."</td>
+        <td>Yes <small>(hardware)</small></td>
+        <td><b>~125 ms</b> <small>(official)</small></td>
+        <td><span class="tag strong">strong</span></td>
+      </tr>
+      <tr>
+        <td><b>Full VM</b><br><small>QEMU / cloud instance</small></td>
+        <td>Complete hardware virtualization of a whole machine — a full guest OS, fully separated.</td>
+        <td>Yes</td>
+        <td>Slow <small>(seconds)</small></td>
+        <td><span class="tag strong">strongest</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="cap">Table 1 — Dotted terms have definitions in the glossary. <b>Numbers caveat:</b> only Firecracker's figures are quoted from the official project — "initiates user space or application code in as little as 125 ms," "up to 150 microVMs per second per host," and "reduced memory overhead of less than 5 MiB." The other Startup entries are qualitative; real latency varies widely by workload and configuration, so treat them as ordering, not measurements.</p>
+
+  <p style="margin-top:20px">In practice, providers of agent sandboxes often build on Firecracker or gVisor precisely because "all LLM-generated code is treated as potentially malicious" — a zero-trust stance that pushes toward an <em>own-kernel</em> boundary rather than a shared one. Which you pick is a trade between how hostile you assume the code is and how much startup latency and operational complexity you'll accept.</p>
+</section>
+
+<!-- 7. RISKS -->
+<section>
+  <p class="n">07 · What to watch for</p>
+  <h2>A sandbox is a boundary, not a force field</h2>
+  <p class="lead">Isolation is necessary but not sufficient. The leaks are usually in the doors you opened, not the walls themselves.</p>
+  <div class="risks">
+    <div class="risk"><div class="no">1</div><div><b>Network egress</b><span>The most common leak. If the sandbox can reach the internet, a hijacked agent can exfiltrate data or pull in a payload. Default to no network; grant a narrow allow-list only when a task needs it.</span></div></div>
+    <div class="risk"><div class="no">2</div><div><b>What you mount in</b><span>Every file or credential you hand the sandbox is inside the wall. Mount the one repo it needs, not your home directory; pass scoped, short-lived tokens, never your primary keys.</span></div></div>
+    <div class="risk"><div class="no">3</div><div><b>Resource exhaustion</b><span>Without CPU/memory/disk/time caps, a runaway or deliberately abusive job can starve the host. Caps turn "take down the machine" into "this one job fails."</span></div></div>
+    <div class="risk"><div class="no">4</div><div><b>Escape bugs</b><span>Shared-kernel containers are one kernel vulnerability away from a host breach — the reason high-risk workloads move to gVisor or microVMs. Stronger isolation shrinks, but never fully removes, this surface.</span></div></div>
+    <div class="risk"><div class="no">5</div><div><b>Persistence &amp; reuse</b><span>Reusing a warm sandbox across untrusted tasks lets one task poison the next. Ephemerality is a security property: when in doubt, throw it away and start clean.</span></div></div>
+  </div>
+  <div class="call" style="margin-top:22px">
+    <div class="lbl">The one-line takeaway</div>
+    <p>A sandbox contains the <em>impact</em> of untrusted code; it does not make the code trustworthy. Treat the model's output as hostile, keep the doors closed by default, and make the environment cheap to destroy.</p>
+  </div>
+</section>
+
+<!-- GLOSSARY -->
+<section>
+  <p class="n">08 · Glossary</p>
+  <h2>Terms, defined once</h2>
+  <dl class="gloss">
+    <dt>LLM / agent</dt><dd>A large language model is an AI trained to predict text. It becomes an <em>agent</em> when given tools — like running code — and a loop to act, observe, and act again.</dd>
+    <dt>Kernel</dt><dd>The core of an operating system that controls hardware, memory, and processes. Whether untrusted code shares the host's kernel is the central sandbox-security question.</dd>
+    <dt>Container</dt><dd>A lightweight isolated process using Linux namespaces + cgroups. Fast and standard, but shares the host kernel — so isolation is only as strong as that kernel.</dd>
+    <dt>Namespaces / cgroups / seccomp</dt><dd>The kernel features containers lean on: namespaces give a private view of the system, cgroups cap resources, seccomp restricts which system calls are allowed.</dd>
+    <dt>Syscall (system call)</dt><dd>The way a program asks the kernel to do privileged things (open a file, use the network). Controlling syscalls is how sandboxes control what code can do.</dd>
+    <dt>gVisor</dt><dd>Google's open-source sandbox: a user-space "application kernel" (written in Go) that intercepts an app's syscalls and services them itself instead of passing them to the host kernel. Ships the <code>runsc</code> OCI runtime.</dd>
+    <dt>Sentry / Gofer</dt><dd>gVisor's two parts: the <em>Sentry</em> is the user-space kernel that handles syscalls; the <em>Gofer</em> is a separate process that mediates filesystem access over the 9P protocol, adding a layer of isolation.</dd>
+    <dt>MicroVM</dt><dd>A stripped-down virtual machine with only the devices a workload needs, giving hardware-enforced isolation at near-container speed. Firecracker is the best-known implementation.</dd>
+    <dt>Firecracker</dt><dd>AWS's open-source microVM technology built on KVM, purpose-built for secure multi-tenant code execution — boots in as little as 125 ms with under 5 MiB overhead.</dd>
+    <dt>KVM</dt><dd>Kernel-based Virtual Machine — the Linux feature that lets software create hardware-isolated virtual machines. The boundary microVMs rely on.</dd>
+    <dt>Prompt injection</dt><dd>An attack where hostile instructions are hidden in data the model reads, hijacking its behaviour. Sandboxes can't prevent it but can contain what a hijacked agent is able to reach.</dd>
+    <dt>Ephemeral</dt><dd>Created for a single task and destroyed after. For sandboxes it's a safety feature: a corrupted environment is discarded, not repaired.</dd>
+    <dt>Egress</dt><dd>Outbound network access from inside the sandbox. Often the weakest link, since it's the path data can leave by.</dd>
+  </dl>
+</section>
+
+<!-- SOURCES -->
+<section style="border-bottom:none">
+  <p class="n">Sources</p>
+  <h2>Where this comes from</h2>
+  <p class="lead">Figures are quoted from primary project sources where possible. Conceptual framing draws on the sources below; secondary/vendor claims are flagged as such in the text and not treated as precise measurements.</p>
+  <ul class="src-list">
+    <li><b>Firecracker</b> — official project site (boot "as little as 125 ms," "up to 150 microVMs per second per host," "less than 5 MiB" overhead, KVM, jailer, minimal device model). <a href="https://firecracker-microvm.github.io/">firecracker-microvm.github.io</a></li>
+    <li><b>gVisor</b> — official docs (application kernel, Sentry does "not pass system calls through to the host kernel," Gofer + 9P, <code>runsc</code>). <a href="https://gvisor.dev/docs/">gvisor.dev/docs</a></li>
+    <li><b>Modal</b> — "What is an AI code sandbox?" (definition; "routinely hallucinate entire packages"; the five use-case shapes; sandboxes in RL loops). <a href="https://modal.com/blog/what-is-ai-code-sandbox">modal.com/blog/what-is-ai-code-sandbox</a></li>
+    <li><b>Secondary / vendor framing</b> (zero-trust "treat all LLM-generated code as potentially malicious," prompt-injection containment, isolation-vs-latency ordering) — drawn from vendor guides (ARMO, Northflank, Blaxel, Firecrawl, Bunnyshell). Directional, not authoritative on numbers.</li>
+  </ul>
+  <p class="cap" style="margin-top:18px">Compiled 2026-07-24 as personal research. Not published. Numbers other than Firecracker's official figures are qualitative and workload-dependent.</p>
+</section>
+
+</main>
+<footer>private research · sandboxes.html · local only</footer>
+</div>
+
+<script>
+  (function(){
+    var root=document.documentElement, btn=document.getElementById('tg');
+    var order=['auto','light','dark'], labels={auto:'◐ auto',light:'○ light',dark:'● dark'};
+    var cur=localStorage.getItem('sbx-theme')||'auto';
+    apply(cur);
+    btn.addEventListener('click',function(){
+      cur=order[(order.indexOf(cur)+1)%order.length];
+      localStorage.setItem('sbx-theme',cur); apply(cur);
+    });
+    function apply(t){ root.setAttribute('data-theme',t); btn.textContent=labels[t]; }
+  })();
+</script>
+</body>
+</html>
