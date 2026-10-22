@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Black October: a sourced security briefing for October 20–22, 2026, separating confirmed incidents, exploitation activity, patch releases, and updates to earlier events.">
+<title>Black October — 48-hour security briefing</title>
+<style>
+  :root{
+    --bg:#f5f3f0; --panel:#fffdfb; --panel-2:#ece8e2;
+    --ink:#191613; --ink-2:#574f47; --ink-3:#8a8177;
+    --line:#e2ddd4; --line-2:#ece7de;
+    --accent:#c02a37;         /* incident crimson */
+    --accent-soft:#f7e4e4;
+    --good:#0e7c66; --warn:#b4611f;
+    /* chart series — validated dataviz slots (blue / amber) */
+    --s-int:#2a78d6; --s-uni:#eda100;
+    --surface-1:#fcfcfb;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
+    --shadow:0 1px 0 rgba(0,0,0,.02), 0 20px 50px -34px rgba(35,25,20,.45);
+  }
+  @media (prefers-color-scheme:dark){
+    :root[data-theme="auto"]{
+      --bg:#100f0e; --panel:#181614; --panel-2:#211e1b;
+      --ink:#ece7e0; --ink-2:#a9a196; --ink-3:#736c62;
+      --line:#2c2925; --line-2:#211f1b;
+      --accent:#f0616e; --accent-soft:#2c1719;
+      --good:#3fbfa1; --warn:#e8934a;
+      --s-int:#3987e5; --s-uni:#c98500;
+      --surface-1:#1a1a19;
+      --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#100f0e; --panel:#181614; --panel-2:#211e1b;
+    --ink:#ece7e0; --ink-2:#a9a196; --ink-3:#736c62;
+    --line:#2c2925; --line-2:#211f1b;
+    --accent:#f0616e; --accent-soft:#2c1719;
+    --good:#3fbfa1; --warn:#e8934a;
+    --s-int:#3987e5; --s-uni:#c98500;
+    --surface-1:#1a1a19;
+    --shadow:0 1px 0 rgba(255,255,255,.02), 0 24px 56px -32px rgba(0,0,0,.85);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--serif);line-height:1.65;font-size:17px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:790px;margin:0 auto;padding:0 22px}
+  .toggle{position:fixed;top:14px;right:14px;z-index:20;font-family:var(--mono);font-size:11px;letter-spacing:.05em;background:var(--panel);color:var(--ink-2);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;box-shadow:var(--shadow)}
+  .toggle:hover{color:var(--ink);border-color:var(--ink-3)}
+  a{color:inherit}
+
+  header{padding:70px 0 30px}
+  .kick{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin:0 0 18px;display:flex;align-items:center;gap:10px}
+  .kick::before{content:"";width:26px;height:1px;background:var(--accent)}
+  h1{font-size:clamp(2.1rem,6.2vw,3.25rem);font-weight:700;letter-spacing:-.02em;line-height:1.05;margin:0 0 16px}
+  .dek{color:var(--ink-2);font-size:1.12rem;max-width:60ch;margin:0 0 22px}
+  .priv{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--ink-2);background:var(--accent-soft);border:1px solid var(--accent);border-radius:999px;padding:6px 14px;margin-bottom:22px}
+  .priv b{color:var(--accent);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0}
+  .meta b{color:var(--ink-2);font-weight:500}
+
+  .tldr{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:22px 26px;margin:34px 0 8px;box-shadow:var(--shadow)}
+  .tldr .tag{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  .tldr ol{margin:0;padding-left:1.2em}
+  .tldr li{margin:8px 0;font-size:.99rem}
+  .tldr li::marker{font-family:var(--mono);color:var(--ink-3);font-size:.85em}
+
+  section{padding:34px 0 6px}
+  h2{font-size:1.62rem;font-weight:700;letter-spacing:-.015em;line-height:1.2;margin:18px 0 14px}
+  h2 .n{font-family:var(--mono);font-size:.6em;font-weight:400;color:var(--accent);letter-spacing:.1em;display:block;margin-bottom:6px}
+  h3{font-size:1.12rem;font-weight:700;margin:24px 0 8px}
+  p{margin:0 0 14px;max-width:68ch}
+  .small{font-size:.9rem;color:var(--ink-2)}
+  code{font-family:var(--mono);font-size:.82em;background:var(--panel-2);border:1px solid var(--line-2);border-radius:5px;padding:1px 5px}
+
+  .pull{border-left:3px solid var(--accent);padding:4px 0 4px 20px;margin:22px 0;font-size:1.15rem;line-height:1.5;color:var(--ink);font-style:italic;max-width:64ch}
+  .pull .who{display:block;font-style:normal;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-3);margin-top:10px}
+
+  /* verbatim quote box */
+  .vq{font-family:var(--mono);font-size:.82rem;line-height:1.7;background:var(--panel-2);border:1px solid var(--line-2);border-left:3px solid var(--ink-3);border-radius:10px;padding:14px 18px;margin:14px 0;color:var(--ink-2);white-space:pre-wrap}
+  .vq .lbl{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;color:var(--ink-3)}
+  .vq.oai{border-left-color:var(--s-int)} .vq.oai .lbl{color:var(--s-int)}
+  .vq.hf{border-left-color:var(--s-uni)} .vq.hf .lbl{color:var(--warn)}
+
+  figure{margin:26px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 20px 16px;box-shadow:var(--shadow)}
+  figcaption{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);line-height:1.6;margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+  figure svg{width:100%;height:auto;display:block}
+  .svg-t{font-family:var(--mono);font-size:11px;fill:var(--ink-2)}
+  .svg-t.dim{fill:var(--ink-3)}
+  .svg-t.strong{fill:var(--ink);font-weight:600}
+  .svg-t.acc{fill:var(--accent);font-weight:600}
+
+  .stat-row{display:flex;gap:14px;flex-wrap:wrap;margin:24px 0}
+  .stat{flex:1 1 150px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+  .stat .v{font-size:2rem;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+  .stat .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:6px;line-height:1.6}
+
+  /* two-framing tension */
+  .frames{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+  .frame{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--panel);box-shadow:var(--shadow)}
+  .frame .h{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+  .frame.a .h{color:var(--s-int)} .frame.b .h{color:var(--accent)}
+  .frame p{font-size:.94rem;margin:0}
+  @media(max-width:560px){.frames{grid-template-columns:1fr}}
+
+  .callout{background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:18px 22px;margin:24px 0}
+  .callout .tag{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin:0 0 8px;color:var(--accent)}
+  .callout p{font-size:.94rem;margin-bottom:8px} .callout p:last-child{margin-bottom:0}
+
+  /* chart */
+  .viz{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px 14px;margin:26px 0;box-shadow:var(--shadow)}
+  .viz .vh{font-weight:700;font-size:1.02rem;margin-bottom:2px;font-family:var(--sans)}
+  .viz .vs{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-bottom:16px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--ink-2);margin-bottom:14px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .bar-row{display:grid;grid-template-columns:104px 1fr;gap:10px;align-items:center;margin:7px 0;font-family:var(--sans)}
+  .bar-row .nm{font-family:var(--mono);font-size:11.5px;color:var(--ink);text-align:right;line-height:1.2}
+  .bar-row .nm small{color:var(--ink-3);display:block;font-size:10px}
+  .bar2{display:flex;align-items:center;gap:9px}
+  .track{display:flex;align-items:center;gap:2px;height:24px;flex:none}
+  .seg{height:100%;border-radius:3px;min-width:2px}
+  .seg.int{background:var(--s-int)} .seg.uni{background:var(--s-uni)}
+  .al{font-family:var(--mono);font-size:11px;color:var(--ink-2);white-space:nowrap}
+  .al b{color:var(--ink);font-weight:600} .al .pct{color:var(--ink-3)}
+  details.tbl{margin:14px 0 2px;font-family:var(--sans)}
+  details.tbl summary{font-family:var(--mono);font-size:11px;color:var(--ink-3);cursor:pointer}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.85rem}
+  th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line-2)}
+  th:first-child,td:first-child{text-align:left}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+
+  /* data-hit ledger */
+  .ledger{margin:16px 0}
+  .ledger .row{display:grid;grid-template-columns:26px 1fr;gap:12px;padding:11px 0;border-top:1px solid var(--line-2);font-size:.96rem}
+  .ledger .row:last-child{border-bottom:1px solid var(--line-2)}
+  .ledger .ic{font-family:var(--mono);font-weight:700;text-align:center}
+  .ledger .yes{color:var(--accent)} .ledger .no{color:var(--good)}
+
+  dl{margin:10px 0}
+  dt{font-family:var(--mono);font-size:.85rem;font-weight:600;margin-top:14px}
+  dd{margin:2px 0 0;color:var(--ink-2);font-size:.93rem;max-width:68ch}
+
+  footer{padding:40px 0 80px;color:var(--ink-3);font-size:.85rem;border-top:1px solid var(--line);margin-top:44px}
+  footer .m{font-family:var(--mono);font-size:11.5px;line-height:2}
+
+  .back{display:inline-block;font-family:var(--mono);font-size:12px;margin-bottom:24px;color:var(--ink-2)}
+  .jump{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:12px;margin:22px 0}
+  .window{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin:18px 0;line-height:1.8}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+  .filters button{font:12px var(--mono);border:1px solid var(--line);border-radius:999px;padding:10px 14px;color:var(--ink-2);background:var(--panel);cursor:pointer}
+  .filters button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .incident{border-top:1px solid var(--line);padding:24px 0 10px;scroll-margin-top:65px}
+  .incident h3{font-size:1.35rem;margin:10px 0 12px}
+  .badge{display:inline-block;font:11px var(--mono);color:var(--accent);border:1px solid var(--line);border-radius:6px;padding:4px 8px;margin:0 5px 5px 0}
+  .evidence{font:12px var(--mono);color:var(--ink-2);line-height:1.8;margin-bottom:14px}
+  .cite{font:11px var(--mono);vertical-align:super;color:var(--accent);white-space:nowrap;text-decoration:none}
+  .timeline{list-style:none;padding:0 0 0 18px;border-left:2px solid var(--line)}
+  .timeline li{position:relative;padding:0 0 20px 10px}
+  .timeline li::before{content:"";position:absolute;left:-24px;top:9px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .timeline time{display:block;font:12px var(--mono);color:var(--accent);margin-bottom:5px}
+  .table-wrap{padding:0;overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin:20px 0}
+  .table-wrap table{margin:0;font-family:var(--sans);min-width:580px}
+  .table-wrap th,.table-wrap td{text-align:left;padding:12px;vertical-align:top}
+  .table-wrap caption{text-align:left;padding:12px;font:12px var(--mono);color:var(--ink-2)}
+  .sources{font-family:var(--sans);font-size:.88rem;padding-left:24px}
+  .sources li{padding:8px 0;scroll-margin-top:65px;overflow-wrap:anywhere}
+  .sources small{display:block;color:var(--ink-2)}
+  .source-note{font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+  .skip{position:absolute;top:-100px;left:10px;background:var(--panel);padding:12px;z-index:30}
+  .skip:focus{top:10px}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+  [hidden]{display:none!important}
+  section{scroll-margin-top:50px}
+  code{overflow-wrap:anywhere}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  @media(max-width:560px){.wrap{padding:0 18px}.tldr{padding:18px}.callout{padding:16px}.meta{gap:8px}.stat{flex-basis:100px}}
+  @media print{.toggle,.filters,.back,.jump,.skip{display:none!important}.incident[hidden]{display:block!important}:root[data-theme]{--bg:white;--panel:white;--panel-2:#eee;--ink:black;--ink-2:#333;--ink-3:#555;--accent:#922;--line:#bbb;--accent-soft:#fff}body{font-size:11pt}.wrap{max-width:none}header{padding-top:0}.tldr,.stat,figure{box-shadow:none}h2,h3{break-after:avoid}.table-wrap{overflow:visible}.table-wrap table{min-width:0}.sources a{overflow-wrap:anywhere}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to briefing</a>
+<button class="toggle" id="t" type="button" aria-label="Change colour theme">◐ theme</button>
+<div class="wrap">
+<header>
+  <a class="back" href="index.html">← All research</a>
+  <p class="kick">Security briefing · October 2026</p>
+  <h1>Black October.</h1>
+  <p class="dek">A compromised AI package, potentially exposed cloud secrets, and urgent fixes across the software stack. What changed in 48 hours, what the evidence supports, and where to act first.</p>
+  <p class="window"><strong>Reporting window · UTC</strong><br><time datetime="2026-10-20T20:41:08Z">20 October 2026, 20:41:08</time> → <time datetime="2026-10-22T20:41:08Z">22 October 2026, 20:41:08</time></p>
+  <div class="meta"><span><b>Research date</b> 22 Oct 2026</span><span><b>Coverage</b> 10 selected developments</span><span><b>Evidence</b> linked, with uncertainty labels</span></div>
+  <nav class="jump" aria-label="Briefing sections"><a href="#read-first">Read first</a><a href="#timeline">Timeline</a><a href="#developments">Developments</a><a href="#actions">Response priorities</a><a href="#method">Method &amp; limits</a><a href="#sources">Sources</a></nav>
+</header>
+<main id="main">
+<div class="tldr" id="read-first">
+  <p class="tag">Read this first</p>
+  <ol>
+    <li><strong>Contain exposed credentials first.</strong> LiteLLM confirms a malicious release; Railway reports possible access to customer secrets. Check actual artifact execution and stored-secret exposure, then revoke credentials and rebuild where appropriate. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a> <a class="cite" href="#source-2" aria-label="Source 2">[2]</a> <a class="cite" href="#source-3" aria-label="Source 3">[3]</a></li>
+    <li><strong>Patch exposed services promptly.</strong> PHP and VeloCloud have reported exploitation activity. GitLab and Node.js have major security updates; their advisories are not evidence that all affected installations were breached. <a class="cite" href="#source-4" aria-label="Source 4">[4]</a> <a class="cite" href="#source-5" aria-label="Source 5">[5]</a> <a class="cite" href="#source-6" aria-label="Source 6">[6]</a> <a class="cite" href="#source-7" aria-label="Source 7">[7]</a> <a class="cite" href="#source-8" aria-label="Source 8">[8]</a></li>
+    <li><strong>Investigate earlier than the headlines.</strong> PHP attempts date to October 17. ConnectWise’s campaign and eMudhra’s weak-key discovery predate this window. New reports can reveal older exposure. <a class="cite" href="#source-5" aria-label="Source 5">[5]</a> <a class="cite" href="#source-12" aria-label="Source 12">[12]</a> <a class="cite" href="#source-14" aria-label="Source 14">[14]</a></li>
+  </ol>
+</div>
+<div class="callout">
+  <p class="tag">What “Black October” means here</p>
+  <p>This is the title of this briefing, not an established name for one coordinated campaign. These are distinct events. The public evidence reviewed does not establish a shared attacker or a single root cause.</p>
+  <p><strong>“Last 48 hours” is a reporting window.</strong> Only LiteLLM’s release compromise is precisely timed here. Other items are labeled as detection, disclosure, patching, or updates; unknown intrusion dates stay unknown. This is a selected public-source briefing, not an exhaustive incident census.</p>
+</div>
+<section id="timeline">
+<h2><span class="n">§ 1</span>The sequence that matters</h2>
+<p class="small">Exact times are UTC. Date-only rows preserve the source’s precision and imply no ordering within that day.</p>
+<ol class="timeline">
+<li><time datetime="2026-10-21T11:39:51Z">21 Oct · 11:39:51 UTC</time>Malicious LiteLLM wheels begin publication. Docker and GHCR publication follows at 11:46:56. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a></li>
+<li><time datetime="2026-10-21T13:23:00Z">21 Oct · by 13:23 UTC</time>PyPI removes the affected version. GHCR tags are unavailable by 13:51; Docker Hub cleanup completes at 14:20. These are separate exposure windows. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a></li>
+<li><time datetime="2026-10-21T14:00:00Z">21 Oct · 14:00 UTC</time>PHP’s embargo lifts and fixes are released; AWS reports attempts before release and exploitation activity afterward. <a class="cite" href="#source-5" aria-label="Source 5">[5]</a></li>
+<li><time datetime="2026-10-21T16:20:00Z">21 Oct · 16:20–17:01 UTC</time>Wiz observes use of AWS credentials stolen in the LiteLLM incident. <a class="cite" href="#source-2" aria-label="Source 2">[2]</a></li>
+<li><time datetime="2026-10-21">21 Oct · date only</time>Railway discloses its investigation; GitLab and Node.js publish fixes; Microsoft publishes ConnectWise campaign analysis. <a class="cite" href="#source-3" aria-label="Source 3">[3]</a> <a class="cite" href="#source-6" aria-label="Source 6">[6]</a> <a class="cite" href="#source-7" aria-label="Source 7">[7]</a> <a class="cite" href="#source-12" aria-label="Source 12">[12]</a></li>
+<li><time datetime="2026-10-22">22 Oct · date only</time>Arista confirms VCO exploitation; KSMBD and Columbia receive new reporting; eMudhra announces its SSL/TLS exit. <a class="cite" href="#source-8" aria-label="Source 8">[8]</a> <a class="cite" href="#source-9" aria-label="Source 9">[9]</a> <a class="cite" href="#source-11" aria-label="Source 11">[11]</a> <a class="cite" href="#source-13" aria-label="Source 13">[13]</a></li>
+</ol>
+</section>
+<section id="developments">
+<h2><span class="n">§ 2</span>Ten developments, with evidence labels</h2>
+<p>Filter by the kind of evidence. “Incident” includes confirmed compromise, possible secret exposure, and reported disruption; each entry states which. “Patch / disclosure” does not imply observed exploitation.</p>
+<div class="filters" id="filters" role="group" aria-label="Filter developments" hidden>
+<button type="button" data-filter="all" aria-pressed="true">All (10)</button>
+<button type="button" data-filter="incident" aria-pressed="false">Incidents (3)</button>
+<button type="button" data-filter="exploitation" aria-pressed="false">Exploitation activity (2)</button>
+<button type="button" data-filter="patch" aria-pressed="false">Patch / disclosure (3)</button>
+<button type="button" data-filter="update" aria-pressed="false">Earlier-event updates (2)</button>
+</div>
+<p class="source-note" id="filter-status" aria-live="polite" hidden></p>
+<article class="incident" id="litellm" data-category="incident"><span class="badge">01 · Supply-chain compromise</span><h3>LiteLLM: the release itself was malicious</h3><p class="evidence">Occurred in window · Oct 21 · Confirmed by maintainer</p>
+<p>LiteLLM, a gateway and Python library for calling AI models, shipped malicious <code>1.107.0</code> artifacts through PyPI, Docker Hub, and GHCR. The payload stole credentials and installed a remote-code loader. The official GitHub source tag was clean: the compromised release workflow built from an attacker-controlled lookalike repository. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a></p>
+<p><strong>Exposure window:</strong> the maintainer gives PyPI as <strong>11:39:51–13:23 UTC</strong> on October 21, Docker Hub as <strong>11:46:56–14:20 UTC</strong>, and GHCR as beginning 11:46:56 UTC and unavailable by 13:51 UTC. Affected container tags included <code>v1.107.0</code>, <code>latest</code>, <code>main-latest</code>, and <code>main-stable</code>. Cached copies can still execute after registry removal. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a></p>
+<p><strong>Observed consequence:</strong> Wiz reports use of stolen AWS role credentials between 16:20 and 17:01 UTC, including identity and model-enumeration calls. This is evidence of downstream credential abuse, not merely a malicious package upload. <a class="cite" href="#source-2" aria-label="Source 2">[2]</a></p>
+<p><strong>Act:</strong> isolate affected environments, preserve evidence, revoke and rotate every reachable secret from a clean system, and rebuild from verified artifacts. The maintainer recommends pinning <code>1.106.2</code> for this incident. Avoid starting Python or pip in a suspect environment: Python startup can execute the malicious files again. Private enterprise-registry releases were unaffected according to LiteLLM. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a></p>
+<p class="small"><strong>Still open:</strong> LiteLLM suspects exposed gateway logs containing GitHub CLI OAuth tokens enabled the intrusion. The initial access mechanism remains unconfirmed. The report does not establish a common attacker with Railway. Registry takedown estimates differ between sources; this briefing uses the maintainer’s artifact-specific timeline. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a> <a class="cite" href="#source-2" aria-label="Source 2">[2]</a> <a class="cite" href="#source-3" aria-label="Source 3">[3]</a></p></article>
+<article class="incident" id="railway" data-category="incident"><span class="badge">02 · Possible customer-secret exposure</span><h3>Railway: stored environment variables may have been accessed</h3><p class="evidence">Detected and disclosed in window · Oct 21 · Scope under investigation</p>
+<p>Railway detected anomalous activity on systems storing customer environment variables. Its investigation indicates that an unauthorized party may have accessed encrypted variables and decrypted some of them. These variables can contain API keys, database passwords, and private-registry credentials. The provider describes a possible subset of users; it has not supplied a verified affected-user count in this disclosure. <a class="cite" href="#source-3" aria-label="Source 3">[3]</a></p>
+<p><strong>Act:</strong> Railway recommends all customers immediately rotate stored environment variables containing secrets and private-registry credentials, then review the corresponding services for unusual activity. Revoke credentials at their issuing services; merely changing a stored value does not revoke a stolen key. Coordinate redeployment with current service availability. <a class="cite" href="#source-3" aria-label="Source 3">[3]</a></p>
+<p class="small"><strong>Timing and uncertainty:</strong> October 21 is the detection and disclosure date, not an established first-access date. Railway believes the activity targets AI inference providers; that is its assessment, not independently established attribution. The original disclosure paused deployments, so it should not be used as a live service-status page. <a class="cite" href="#source-3" aria-label="Source 3">[3]</a></p></article>
+<article class="incident" id="php" data-category="exploitation"><span class="badge">03 · Runtime vulnerabilities</span><h3>PHP2Shell: emergency patches, with exploitation activity</h3><p class="evidence">Patch and new exploitation reporting in window · Oct 21</p>
+<p><code>CVE-2026-109618</code> and <code>CVE-2026-109619</code> affect the PHP runtime used to serve web requests. PHP’s advisory includes PHP-FPM, Apache <code>mod_php</code>, php-cgi, FrankenPHP, and LiteSpeed; it considers <code>mod_php</code> the highest-risk deployment, with demonstrated unauthenticated execution before application code runs. Updating an application alone does not update the runtime beneath it. <a class="cite" href="#source-4" aria-label="Source 4">[4]</a></p>
+<p><strong>Install:</strong> PHP <strong>8.5.12 / 8.4.27 / 8.3.36 / 8.2.35</strong>, or a distribution package with the relevant fixes backported. Restart the serving processes and rebuild affected container images. PHP and AWS say configuration-only workarounds do not fully remediate both flaws. <a class="cite" href="#source-4" aria-label="Source 4">[4]</a> <a class="cite" href="#source-5" aria-label="Source 5">[5]</a></p>
+<p><strong>Exploitation evidence:</strong> AWS reports an October 17 attempt and further attempts on October 21 before the 14:00 UTC release, followed by broad exploitation activity. Its technical analysis does not establish that the sampled pre-release attempts would have succeeded against real-world systems. Do not translate honeypot attempts into a count of breached organizations. <a class="cite" href="#source-5" aria-label="Source 5">[5]</a></p>
+<p class="small"><strong>Investigation window:</strong> review relevant logs from at least October 17, extending before this briefing’s reporting window. October 21 is the patch/reporting event; it is not the beginning of exploitation. <a class="cite" href="#source-5" aria-label="Source 5">[5]</a></p></article>
+<article class="incident" id="velocloud" data-category="exploitation"><span class="badge">04 · Network management</span><h3>VeloCloud: a low-privilege account can become an operator</h3><p class="evidence">New advisory in window · Oct 22 · Vendor confirms active exploitation</p>
+<p>Arista’s <code>CVE-2026-114625</code> is an SQL-injection vulnerability in VeloCloud Orchestrator. An attacker needs network access and a valid authenticated session; even the <em>Enterprise Read Only</em> role is sufficient to gain operator privileges and impersonate a local superuser operator. This is not an unauthenticated flaw. Arista rates it <strong>9.9 under CVSS 3.1</strong> and <strong>9.4 under CVSS 4.0</strong>. <a class="cite" href="#source-8" aria-label="Source 8">[8]</a></p>
+<p><strong>Install:</strong> <strong>5.2.3.18 / 6.1.3.10 / 6.4.2.12</strong> on the corresponding VCO release train. Hosted and Dedicated orchestrators have already been patched, according to Arista. VeloCloud Edge and Gateway are not affected by this specific vulnerability; end-of-support versions were not assessed. <a class="cite" href="#source-8" aria-label="Source 8">[8]</a></p>
+<p><strong>Act:</strong> restrict the management interface to trusted administrative networks while upgrading; investigate unexpected administrator changes, outbound connections, and webshells. Preserve relevant logs before remediation where feasible. Arista confirms exploitation but does not date its onset or identify victims in the advisory. A patch does not by itself demonstrate removal of an existing intruder. <a class="cite" href="#source-8" aria-label="Source 8">[8]</a></p></article>
+<article class="incident" id="gitlab" data-category="patch"><span class="badge">05 · Development infrastructure</span><h3>GitLab: critical unauthenticated server-code execution</h3><p class="evidence">Patch released in window · Oct 21 · Exploitation not established here</p>
+<p><code>CVE-2026-110264</code> is an integer overflow during regular-expression compilation that can permit unauthenticated code execution under certain conditions. GitLab rates it <strong>CVSS 3.1: 10.0</strong>. Affected CE/EE versions extend back to 7.0, so old self-managed deployments need attention too. The score describes potential severity; it is not proof of an actual breach. <a class="cite" href="#source-6" aria-label="Source 6">[6]</a></p>
+<p><strong>Install on the appropriate upgrade path:</strong> <strong>19.5.1, 19.4.3, 19.3.6, 19.2.9, 19.1.9, 19.0.10, or 18.11.13</strong>. GitLab.com is already patched. GitLab Dedicated tenants on <code>19.3.5-internal0</code> or <code>19.4.2-internal0</code> or later already have the fix. <a class="cite" href="#source-6" aria-label="Source 6">[6]</a></p>
+<p><strong>Act:</strong> inventory self-managed instances, follow GitLab’s supported upgrade procedure, and review its published “Onigmo native worker crash” and “Org mode render error burst” detections. The examined advisory establishes the vulnerability and fix, not confirmed victim compromise. <a class="cite" href="#source-6" aria-label="Source 6">[6]</a></p></article>
+<article class="incident" id="node" data-category="patch"><span class="badge">06 · Application runtime</span><h3>Node.js: Brotli memory corruption and nine other fixes</h3><p class="evidence">Security releases in window · Oct 21 · Exploitation not established here</p>
+<p>Node.js patched ten vulnerabilities across its supported 22.x, 24.x, and 26.x lines. The project describes <code>CVE-2026-111497</code> as a Brotli decoder out-of-bounds write permitting remote code execution, rated <strong>High</strong>. Other fixes address DNS truncation, TLS hostname checks, randomness caches, and permission checks. Not every issue affects every line. <a class="cite" href="#source-7" aria-label="Source 7">[7]</a></p>
+<p><strong>Install:</strong> <strong>22.23.4 / 24.22.1 / 26.12.1</strong>. Update deployed runtimes and images, including workers and build environments; changing an npm dependency lockfile alone does not replace Node.js. End-of-life lines should move to a supported release. The releases also include updates concerning the eMudhra CA incident. <a class="cite" href="#source-7" aria-label="Source 7">[7]</a></p>
+<p class="small"><strong>Evidence boundary:</strong> the advisory establishes affected versions and potential impact. It does not establish exploitation or a production breach. Treat it as urgent patch work without labeling every Node.js service compromised. <a class="cite" href="#source-7" aria-label="Source 7">[7]</a></p></article>
+<article class="incident" id="ksmbd" data-category="patch"><span class="badge">07 · Linux file sharing</span><h3>KSMBD: public reports ahead of a confirmed fix</h3><p class="evidence">New disclosure coverage in window · Oct 22 · Technical details partly secondary</p>
+<p>The Hacker News reports two KSMBD remote-code-execution issues, <code>ZDI-CAN-33774</code> and <code>ZDI-CAN-33549</code>, with reported CVSS scores of 9.0. The first concerns protocol dispatch before authentication; the second requires SMB Direct/RDMA and a writable share. These are KSMBD-specific reports, not a claim that every Linux installation is remotely exploitable. <a class="cite" href="#source-9" aria-label="Source 9">[9]</a></p>
+<p><strong>Evidence quality:</strong> ZDI’s rolling list independently corroborates <code>ZDI-CAN-33774</code>, its Linux target, score, and October 21 reporting date. The original mailing-list pages were inaccessible behind a bot challenge, so the technical detail and absence of a mainline fix rely on the secondary report. No in-the-wild exploitation is established by the examined evidence. <a class="cite" href="#source-9" aria-label="Source 9">[9]</a> <a class="cite" href="#source-10" aria-label="Source 10">[10]</a></p>
+<p><strong>Act:</strong> identify hosts actually serving KSMBD, restrict SMB access to required networks, and disable unused KSMBD service after assessing operational impact. Confirm current patch availability with the distribution/vendor before choosing a kernel version; this briefing does not invent a fixed release. <a class="cite" href="#source-9" aria-label="Source 9">[9]</a></p></article>
+<article class="incident" id="columbia" data-category="incident"><span class="badge">08 · Public-service disruption</span><h3>Columbia, South Carolina: city systems disrupted</h3><p class="evidence">Reported in window · Oct 22 · Intrusion onset and data loss unspecified</p>
+<p>The Record reports, quoting a city spokesperson, that Columbia is responding to a cyberattack and that South Carolina’s SLED is leading the investigation. Affected systems include MyColaSC, geographic-information systems, and animal services. The city said police, fire, 911, water systems, and the Payment Center—including online payment services—remained operational. <a class="cite" href="#source-11" aria-label="Source 11">[11]</a></p>
+<p><strong>What is established:</strong> a reported cyberattack with service disruption. The report does not confirm ransomware, stolen data, a perpetrator, or the precise start of the intrusion. October 22 is its publication date. It would be misleading to classify this as a confirmed data breach or an attack proven to have begun in these 48 hours. <a class="cite" href="#source-11" aria-label="Source 11">[11]</a></p>
+<p class="small"><strong>Operational lesson — analysis:</strong> maintain alternate service channels and distinguish unavailable portals from failures of underlying critical services. No action against Columbia’s systems is part of this research.</p></article>
+<article class="incident" id="connectwise" data-category="update"><span class="badge">09 · New attribution for an earlier incident</span><h3>ConnectWise: Microsoft details ARTEX-assisted activity</h3><p class="evidence">New analysis in window · Oct 21 · Campaign and initial disclosure predate it</p>
+<p>Microsoft attributes the ConnectWise Cloud Backup supply-chain compromise to the China-state-aligned actor it calls Storm-0940. It describes use of the ARTEX agent framework to accelerate reconnaissance, password spraying, and OAuth-application abuse. Its telemetry places the broader campaign as early as September; ConnectWise’s initial advisory was October 16. This is a new intelligence update, not a new October 21 breach. <a class="cite" href="#source-12" aria-label="Source 12">[12]</a></p>
+<p><strong>Act if the integration was authorized:</strong> follow current vendor containment guidance, preserve Entra sign-in and audit evidence, and inspect service-principal credentials, consent grants, role assignments, and Microsoft Graph activity. Microsoft advises keeping affected connections disabled pending formal restoration instructions, and not deleting enterprise applications as the first response. <a class="cite" href="#source-12" aria-label="Source 12">[12]</a></p>
+<p class="small"><strong>Interpret carefully:</strong> targeting, failed logins, successful authentication, persistence, and data exfiltration are different observations. Microsoft explicitly cautions that an affected application or successful sign-in alone does not prove data access. AI assistance does not establish a link to the other incidents in this briefing. <a class="cite" href="#source-12" aria-label="Source 12">[12]</a></p></article>
+<article class="incident" id="emudhra" data-category="update"><span class="badge">10 · Certificate-trust fallout</span><h3>eMudhra: certificate replacement becomes an operational deadline</h3><p class="evidence">Business-exit announcement in window · Oct 22 · Weak-key discovery Oct 17</p>
+<p>eMudhra announced its exit from the global SSL/TLS certificate business on October 22, following the earlier weak-key incident. Google says eight subordinate CA private keys had insufficient randomness; the initial report arrived on October 17. eMudhra says its infrastructure was not compromised and no data was breached. A cryptographic trust failure must not be silently relabeled a network intrusion. <a class="cite" href="#source-13" aria-label="Source 13">[13]</a> <a class="cite" href="#source-14" aria-label="Source 14">[14]</a></p>
+<p><strong>Act:</strong> inventory certificates chaining to <code>emSign ECC Root CA - G3</code> and replace them with a certificate from another trusted hierarchy. Google plans root removal for <strong>October 27, Pacific time</strong>; legitimate certificates under that root will also stop working. Update runtimes and trust stores through their supported mechanisms, including the Node.js release above. <a class="cite" href="#source-14" aria-label="Source 14">[14]</a> <a class="cite" href="#source-7" aria-label="Source 7">[7]</a></p>
+<p class="small"><strong>Timing:</strong> the discovery and initial browser blocking are outside the reporting window. The October 22 exit announcement and resulting migration work are the included development. Google’s account limits claims about abuse: no certificates from the six TLS intermediates were logged to CT before its blocking action, protecting CT-enforcing clients. <a class="cite" href="#source-13" aria-label="Source 13">[13]</a> <a class="cite" href="#source-14" aria-label="Source 14">[14]</a></p></article>
+
+</section>
+<section id="actions">
+<h2><span class="n">§ 3</span>Response priorities for a software team</h2>
+<p><strong>Analyst recommendations:</strong> prioritize actual deployment and exposure over headline severity. This research did not inspect XO infrastructure and does not establish that XO uses, or was affected by, any listed product.</p>
+<section class="table-wrap" tabindex="0" aria-label="Response priority table, scroll horizontally on small screens">
+<table>
+<caption>Suggested sequence, conditional on affected products being present</caption>
+<thead><tr><th scope="col">Priority</th><th scope="col">Trigger</th><th scope="col">Useful completion evidence</th></tr></thead>
+<tbody>
+<tr><td>Contain &amp; investigate</td><td>Malicious LiteLLM artifact executed; Railway-held secrets; VCO indicators</td><td>Exposure recorded, affected access contained, evidence preserved, credentials revoked at issuers, clean rebuild and access review completed.</td></tr>
+<tr><td>Patch exposed services</td><td>Affected PHP, VCO, GitLab, or Node.js deployment</td><td>Deployed version or vendor backport verified, all replicas restarted/redeployed, relevant logs reviewed. A dependency-file edit alone is insufficient.</td></tr>
+<tr><td>Reduce unpatched exposure</td><td>KSMBD service in use</td><td>SMB reachability constrained, unnecessary service disabled, distribution-specific fix status checked.</td></tr>
+<tr><td>Review persistent access</td><td>ConnectWise integration currently or previously authorized</td><td>Service-principal credentials, consent, roles, and downstream activity checked; unauthorized access removed with evidence retained.</td></tr>
+<tr><td>Prevent certificate failure</td><td>Certificate chains to emSign ECC Root CA - G3</td><td>Replacement trusted chain deployed and tested before the planned Oct 27 Chrome root removal.</td></tr>
+</tbody>
+</table>
+</section>
+<p class="small">These priorities synthesize provider and researcher guidance. Follow the linked advisory for the exact deployment; patching, removing malware, revoking credentials, and investigating historical access solve different parts of an incident. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a> <a class="cite" href="#source-3" aria-label="Source 3">[3]</a> <a class="cite" href="#source-4" aria-label="Source 4">[4]</a> <a class="cite" href="#source-5" aria-label="Source 5">[5]</a> <a class="cite" href="#source-6" aria-label="Source 6">[6]</a> <a class="cite" href="#source-7" aria-label="Source 7">[7]</a> <a class="cite" href="#source-8" aria-label="Source 8">[8]</a> <a class="cite" href="#source-9" aria-label="Source 9">[9]</a> <a class="cite" href="#source-12" aria-label="Source 12">[12]</a> <a class="cite" href="#source-14" aria-label="Source 14">[14]</a></p>
+<h3>What ties the response work together</h3>
+<p><strong>Analysis:</strong> several developments put credentials or delegated trust at risk: package execution can steal keys; a platform can expose stored secrets; an OAuth application can retain access after a vendor response; a certificate authority can undermine authentication. The practical question is not only “Did we patch?” but “What access could already have escaped, and have we revoked it?” This is a shared defensive concern, not a claim of common attribution. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a> <a class="cite" href="#source-3" aria-label="Source 3">[3]</a> <a class="cite" href="#source-12" aria-label="Source 12">[12]</a> <a class="cite" href="#source-14" aria-label="Source 14">[14]</a></p>
+</section>
+<section id="method">
+<h2><span class="n">§ 4</span>Method, exclusions, and open questions</h2>
+<p>The cutoff was fixed when research began: <strong>October 22, 2026 at 20:41:08 UTC</strong>, minus exactly 48 hours. Discovery used The Hacker News and The Record feeds, followed by opening the cited vendor advisories, researcher reports, and CISA catalog. RSS timestamps were normalized to UTC; an article showing October 23 in UTC+05:30 can still fall on October 22 UTC. Sources were accessed October 22; no archived snapshot of every page at the cutoff was available. <a class="cite" href="#source-17" aria-label="Source 17">[17]</a> <a class="cite" href="#source-18" aria-label="Source 18">[18]</a> <a class="cite" href="#source-19" aria-label="Source 19">[19]</a></p>
+<p>Selection favors consequential public disclosures, exploitation, patches, and material updates. Publication time is not intrusion time. The briefing uses “confirmed” for what a provider or cited observer actually reports, preserves “may” and “suspected,” and distinguishes vendor assessment from independent observation. CVSS version numbers are supplied when scores are compared.</p>
+<h3>Headlines deliberately kept outside the count</h3>
+<ul>
+<li><strong>OpenCode MCP OAuth RCE:</strong> Pillar’s original report is dated October 19 and the fix, <code>1.18.33</code>, was released September 28. October 22 coverage does not make it a new vulnerability inside this window. Relevant background for Windows/WSL users, but excluded from the ten developments. <a class="cite" href="#source-16" aria-label="Source 16">[16]</a></li>
+<li><strong>QPACK / HTTP/3 “Header Accordions”:</strong> FoxIO’s timeline says October 20 publication without a precise time. Some fixes date to 2025 or earlier in 2026. Because publication cannot be placed after the 20:41:08 UTC start boundary, it is excluded from the strict-window count. The original report remains useful for affected HTTP/3 deployments. <a class="cite" href="#source-15" aria-label="Source 15">[15]</a></li>
+<li><strong>Earlier CISA additions:</strong> the retrieved KEV snapshot has October 20 date-only additions. A catalog addition is not the date exploitation began, and the day alone cannot establish inclusion after this window’s evening start. Absence from KEV is not evidence of safety. <a class="cite" href="#source-19" aria-label="Source 19">[19]</a></li>
+</ul>
+<h3>What remains unresolved</h3>
+<ul>
+<li>LiteLLM’s initial access mechanism and full downstream impact; Railway’s first-access date, affected-account count, and extent of plaintext access. <a class="cite" href="#source-1" aria-label="Source 1">[1]</a> <a class="cite" href="#source-3" aria-label="Source 3">[3]</a></li>
+<li>The onset and victim scope of VeloCloud exploitation; actual customer compromises attributable to PHP attempts in the examined telemetry. <a class="cite" href="#source-8" aria-label="Source 8">[8]</a> <a class="cite" href="#source-5" aria-label="Source 5">[5]</a></li>
+<li>KSMBD patch availability by distribution; Columbia’s initial-access route, ransomware status, and any data theft. <a class="cite" href="#source-9" aria-label="Source 9">[9]</a> <a class="cite" href="#source-11" aria-label="Source 11">[11]</a></li>
+</ul>
+<p class="small"><strong>Coverage limits:</strong> BleepingComputer and SecurityWeek returned HTTP 403 during discovery; two kernel mailing-list pages returned a bot challenge. KSMBD therefore has explicitly lower verification depth. Public notices can be incomplete or revised. No exploit was run, no third-party system was probed, and download totals or targeted tenants were not treated as confirmed victims.</p>
+<h3>A short glossary</h3>
+<dl>
+<dt>Vulnerability / exploit / breach</dt><dd>A vulnerability is a weakness; an exploit uses it. A breach or compromise requires evidence of unauthorized access or impact. A vulnerability announcement alone is not a breach.</dd>
+<dt>RCE</dt><dd>Remote code execution: an attacker can cause a remote system to run code. Preconditions differ between vulnerabilities.</dd>
+<dt>Supply-chain compromise</dt><dd>An attacker abuses trusted software distribution or a third-party integration to reach downstream users.</dd>
+<dt>Secret rotation</dt><dd>Replace a credential and invalidate the old one at its issuer, then update legitimate consumers. Removing the old value from a configuration file is not enough.</dd>
+<dt>CVSS / CVE / ZDI-CAN</dt><dd>CVSS scores technical severity; a CVE identifies a vulnerability. ZDI-CAN is a researcher’s tracking identifier and should not be presented as a CVE.</dd>
+</dl>
+</section>
+<section id="sources">
+<h2><span class="n">§ 5</span>Sources you can inspect</h2>
+<p class="small">Primary sources lead the incident entries. Secondary reporting is identified, including where original technical material could not be read. Source pages may change after this snapshot.</p>
+<ol class="sources">
+<li id="source-1"><a href="https://docs.litellm.ai/blog/security-incident-oct-21-2026">LiteLLM — October 21 incident report</a><small>Primary · Oct 21, updated 20:30 UTC. Artifact windows, containment, response, and provisional root cause.</small></li>
+<li id="source-2"><a href="https://www.wiz.io/blog/litellm-compromised-steals-credentials">Wiz — LiteLLM compromised, steals credentials</a><small>Researcher telemetry · Oct 21. Observed use of stolen AWS credentials; registry timing differs from the maintainer timeline.</small></li>
+<li id="source-3"><a href="https://blog.railway.com/p/security-disclosure-wednesday-october-21st">Railway — Security disclosure, Wednesday October 21</a><small>Primary · Oct 21. Possible secret access, uncertain scope, and credential-rotation advice.</small></li>
+<li id="source-4"><a href="https://www.php.net/archive/2026.php#2026-10-21-5">PHP — October 21 security advisory</a><small>Primary · Oct 21. Affected deployments and fixed PHP versions.</small></li>
+<li id="source-5"><a href="https://aws.amazon.com/blogs/security/amazon-threat-intelligence-identifies-php2shell-exploitation-prior-to-public-disclosure-in-madpot/">Amazon Threat Intelligence — PHP2Shell exploitation before disclosure</a><small>Primary telemetry · Oct 21. Oct 17 and Oct 21 attempts, exploitation assessment, and investigation guidance.</small></li>
+<li id="source-6"><a href="https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-1-released/">GitLab — Critical patch release, October 21</a><small>Primary · Oct 21. CVE-2026-110264, CVSS 3.1 score, affected and fixed releases.</small></li>
+<li id="source-7"><a href="https://nodejs.org/en/blog/vulnerability/october-2026-security-releases">Node.js — October 21 security releases</a><small>Primary · Oct 21. Ten vulnerabilities, affected release lines, fixed versions, and CA updates.</small></li>
+<li id="source-8"><a href="https://www.arista.com/en/support/advisories-notices/security-advisory/24838-security-advisory-0199">Arista — Security advisory 0199</a><small>Primary · Oct 22. Active exploitation, required authentication, CVSS versions, and VCO fixes.</small></li>
+<li id="source-9"><a href="https://thehackernews.com/2026/10/two-cvss-90-linux-ksmbd-rce-flaws.html">The Hacker News — Two Linux KSMBD RCE flaws</a><small>Secondary · Oct 22, 17:01:53 UTC in RSS. Technical details and patch status; original mailing-list pages returned a bot challenge.</small></li>
+<li id="source-10"><a href="https://www.zerodayinitiative.com/advisories/upcoming">Zero Day Initiative — Upcoming advisories</a><small>Primary rolling list · Checked Oct 22. Independently lists ZDI-CAN-33774, Linux, CVSS 9.0, reported Oct 21; not a full technical advisory.</small></li>
+<li id="source-11"><a href="https://therecord.media/south-carolina-officials-offer-assistance-cyber-incident">The Record — Columbia, South Carolina cyberattack</a><small>Secondary, direct city-spokesperson reporting · Oct 22, 12:14 UTC in RSS. Service disruption; incident onset and data loss unspecified.</small></li>
+<li id="source-12"><a href="https://www.microsoft.com/en-us/security/blog/2026/10/21/storm-0940-uses-artex-agentic-ai-connectwise-supply-chain-compromise/">Microsoft — ARTEX and the ConnectWise supply-chain compromise</a><small>Primary telemetry · Oct 21. New attribution and response guidance concerning activity predating the window.</small></li>
+<li id="source-13"><a href="https://emudhra.com/en/press-release/emudhra-to-exit-global-ssl-tls-certificate-business">eMudhra — Exit from global SSL/TLS certificate business</a><small>Primary · Oct 22. Business exit and transition; vendor denies infrastructure compromise or data breach.</small></li>
+<li id="source-14"><a href="https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/">Google — Compromised eMudhra intermediate CA certificates</a><small>Primary background · Oct 20, time unspecified. Oct 17 weak-key report and planned Oct 27 root removal.</small></li>
+<li id="source-15"><a href="https://foxio.io/blog/header-accordions-qpack-amplification-attacks-against-http-3-servers">FoxIO — Header Accordions: QPACK amplification</a><small>Primary background · Timeline says published Oct 20, time unspecified. Earlier disclosure and patch dates; excluded from strict-window count.</small></li>
+<li id="source-16"><a href="https://www.pillar.security/blog/open-and-shut-remote-code-execution-in-opencode-via-mcp-oauth">Pillar Security — OpenCode RCE via MCP OAuth</a><small>Primary background · Oct 19. Fix released Sep 28; excluded from strict-window count.</small></li>
+<li id="source-17"><a href="https://feeds.feedburner.com/TheHackersNews">The Hacker News — News RSS feed</a><small>Discovery · Retrieved Oct 22. Publication timestamps normalized from +05:30 to UTC; headlines cross-checked against original disclosures.</small></li>
+<li id="source-18"><a href="https://therecord.media/feed">The Record — News RSS feed</a><small>Discovery · Retrieved Oct 22. Independent coverage and publication timestamps.</small></li>
+<li id="source-19"><a href="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json">CISA — Known Exploited Vulnerabilities catalog, JSON</a><small>Primary catalog · Retrieved Oct 22; dateReleased Oct 21 14:04:39.8983 UTC. Date-only entries are not proof of an event inside this exact 48-hour window.</small></li>
+</ol>
+</section>
+</main>
+<footer><p class="m">Black October · research briefing · 22 October 2026<br>Reporting cutoff: 20:41:08 UTC · source-linked snapshot, not a live advisory feed<br><a href="index.html">← Back to research</a></p></footer>
+</div>
+<script>
+(() => {
+  const root = document.documentElement, toggle = document.getElementById('t');
+  const modes = ['auto', 'light', 'dark'];
+  const labels = {auto:'◐ auto', light:'☀ light', dark:'☾ dark'};
+  let theme = 'auto';
+  try { const saved = localStorage.getItem('black-october-theme'); if (modes.includes(saved)) theme = saved; } catch (_) {}
+  function applyTheme() { root.dataset.theme = theme; toggle.textContent = labels[theme]; toggle.setAttribute('aria-label', 'Colour theme: ' + theme + '. Activate to change.'); }
+  applyTheme();
+  toggle.addEventListener('click', () => { theme = modes[(modes.indexOf(theme) + 1) % modes.length]; applyTheme(); try { localStorage.setItem('black-october-theme', theme); } catch (_) {} });
+  const filters = document.getElementById('filters');
+  const cards = [...document.querySelectorAll('.incident')];
+  const status = document.getElementById('filter-status');
+  filters.hidden = false; status.hidden = false;
+  function applyFilter(value) {
+    filters.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.filter === value)));
+    cards.forEach(card => { card.hidden = value !== 'all' && card.dataset.category !== value; });
+    status.textContent = 'Showing ' + cards.filter(card => !card.hidden).length + ' of ' + cards.length + ' developments.';
+  }
+  filters.addEventListener('click', event => { const button = event.target.closest('button[data-filter]'); if (button) applyFilter(button.dataset.filter); });
+  applyFilter('all');
+})();
+</script>
+</body>
+</html>
